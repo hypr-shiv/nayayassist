@@ -1,0 +1,38 @@
+[
+  {
+    "id": "gold_01_nia_138",
+    "title": "Legal Notice for Dishonour of Cheque under Section 138 NI Act",
+    "expected_doc_type": "cheque_dishonour_notice",
+    "expected_statute": "NIA-138",
+    "expected_dates": ["01/03/2024"],
+    "has_relative_deadline": true,
+    "raw_text": "LEGAL NOTICE UNDER SECTION 138 OF THE NEGOTIABLE INSTRUMENTS ACT, 1881.\nDate of Notice: 01/03/2024.\nTo: Shri R. K. Sharma, Resident of Delhi.\nSir, under instructions from my client M/s Apex Traders, I hereby issue this statutory notice.\nMy client presented Cheque No. 445566 for Rs. 50,000 drawn on State Bank of India.\nThe said cheque was returned dishonoured with the remark 'Funds Insufficient'.\nYou are hereby called upon to pay the said amount of Rs 50000 within 15 days of receipt of this notice, failing which my client will institute criminal proceedings under Section 138 of the Negotiable Instruments Act."
+  },
+  {
+    "id": "gold_02_tpa_106",
+    "title": "Tenancy Termination Notice under Section 106 TPA",
+    "expected_doc_type": "eviction_notice",
+    "expected_statute": "TPA-106",
+    "expected_dates": ["10/02/2024"],
+    "has_relative_deadline": true,
+    "raw_text": "NOTICE OF TERMINATION OF LEASE UNDER SECTION 106 OF THE TRANSFER OF PROPERTY ACT, 1882.\nDate: 10/02/2024.\nTo: Shri Suresh Gupta, Tenant.\nPlease take notice that your monthly tenancy in respect of premises No. 42, Civil Lines, Kanpur is hereby terminated.\nYou are required to quit, vacate and deliver vacant peaceful possession of the premises to the undersigned landlord within 15 days from the receipt of this notice, failing which ejectment proceedings will be commenced."
+  },
+  {
+    "id": "gold_03_cpc_summons",
+    "title": "Summons for Settlement of Issues under CPC Order VIII Rule 1",
+    "expected_doc_type": "court_summons",
+    "expected_statute": "CPC-O8-R1",
+    "expected_dates": ["25/04/2024"],
+    "has_relative_deadline": true,
+    "raw_text": "IN THE COURT OF CIVIL JUDGE SENIOR DIVISION, PATNA.\nOriginal Suit No. 102 of 2024.\nSUMMONS TO DEFENDANT FOR SETTLEMENT OF ISSUES.\nTo: Shri Mohan Das, Defendant.\nWhereas the Plaintiff has instituted a suit against you for recovery of money.\nYou are hereby summoned to appear in this Court in person or by an advocate on the 25th day of April 2024 (25/04/2024).\nYou are directed to file your written statement of defence within 30 days from the date of service of this summons, as prescribed under Order VIII Rule 1 of the Code of Civil Procedure, 1908."
+  },
+  {
+    "id": "gold_04_consumer_cpa",
+    "title": "Notice of Consumer Complaint under Consumer Protection Act",
+    "expected_doc_type": "consumer_complaint_summons",
+    "expected_statute": "CPA-69",
+    "expected_dates": ["15/01/2024", "28/02/2024"],
+    "has_relative_deadline": false,
+    "raw_text": "BEFORE THE DISTRICT CONSUMER DISPUTES REDRESSAL COMMISSION, LUCKNOW.\nComplaint Case No. 45 of 2024.\nNotice Date: 15/01/2024.\nNOTICE UNDER CONSUMER PROTECTION ACT, 2019.\nTo: Reliance Retail Ltd, Opposite Party.\nNotice is hereby given that the Complainant has filed a consumer dispute under the Consumer Protection Act, 2019.\nYou are hereby summoned to attend and appear before this District Commission on 28/02/2024 at 10:30 AM to answer all material questions relating to the consumer complaint."
+  }
+]
