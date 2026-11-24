@@ -3,10 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NyayaAssist — AI Legal Document Intelligence</title>
-  <!-- PDF.js CDN (vendoring planned for pilot T-115) -->
+  <title>NyayaAssist — Sovereign Legal Document Intelligence</title>
+  <!-- High-Legibility Typography: Plus Jakarta Sans (UI), Newsreader (Editorial Legal Serif), JetBrains Mono (Coordinates) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- PDF.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
   <style>
+    /* ==========================================================================
+       1. PRODUCTION DESIGN TOKENS (DESIGN.md / Anti-AI Slop)
+       ========================================================================== */
     :root {
       --bg-canvas: #F8F9FA;
       --bg-surface: #FFFFFF;
@@ -14,15 +22,15 @@
       --bg-surface-hover: #E9ECEF;
       --border-subtle: #E2E6EA;
       --border-strong: #CED4DA;
-      --border-focus: #2563EB;
+      --border-focus: #1E40AF;
 
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --font-serif: "Newsreader", "Merriweather", Georgia, serif;
-      --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-serif: 'Newsreader', Georgia, serif;
+      --font-mono: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
 
       --text-primary: #111418;
       --text-secondary: #495057;
-      --text-muted: #868E96;
+      --text-muted: #6C757D;
 
       --green-text: #065F46;
       --green-bg: #ECFDF5;
@@ -41,7 +49,11 @@
       --blue-border: #BFDBFE;
 
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-highlight: 0 0 0 3px rgba(30, 64, 175, 0.2);
+
+      --container-max: 1180px;
     }
 
     [data-theme="dark"] {
@@ -51,7 +63,7 @@
       --bg-surface-hover: #222730;
       --border-subtle: #242A34;
       --border-strong: #374151;
-      --border-focus: #3B82F6;
+      --border-focus: #60A5FA;
 
       --text-primary: #F3F5F7;
       --text-secondary: #9CA3AF;
@@ -72,54 +84,105 @@
       --blue-text: #60A5FA;
       --blue-bg: #0C244A;
       --blue-border: #1D4ED8;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.4);
+      --shadow-highlight: 0 0 0 3px rgba(96, 165, 250, 0.25);
     }
 
+    /* ==========================================================================
+       2. BASE & RESET
+       ========================================================================== */
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: var(--font-sans);
       background-color: var(--bg-canvas);
       color: var(--text-primary);
-      line-height: 1.5;
-      height: 100vh;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      min-height: 100vh;
     }
 
-    /* Header */
+    a { color: inherit; text-decoration: none; }
+    button, input, select { font-family: inherit; }
+
+    /* ==========================================================================
+       3. NAVIGATION BAR & MASTHEAD
+       ========================================================================== */
     header {
       background-color: var(--bg-surface);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 0 1.25rem;
-      height: 56px;
+      padding: 0 1.5rem;
+      height: 60px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .brand {
+
+    .brand-group {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      font-weight: 700;
-      font-size: 1.1rem;
-      letter-spacing: -0.02em;
+      gap: 0.85rem;
     }
-    .badge-pill {
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+
+    .brand-scale-badge {
       font-family: var(--font-mono);
-      font-size: 0.75rem;
+      font-size: 0.7rem;
+      font-weight: 600;
       padding: 2px 8px;
-      border-radius: 9999px;
+      border-radius: 4px;
       background: var(--bg-surface-subtle);
       color: var(--text-secondary);
       border: 1px solid var(--border-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
-    .actions { display: flex; align-items: center; gap: 0.5rem; }
-    button, .btn {
-      font-family: var(--font-sans);
+
+    nav.landing-nav {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    nav.landing-nav a {
       font-size: 0.85rem;
       font-weight: 500;
-      padding: 6px 14px;
+      color: var(--text-secondary);
+      transition: color 0.15s;
+    }
+
+    nav.landing-nav a:hover {
+      color: var(--text-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .btn {
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 7px 14px;
       border-radius: 6px;
       cursor: pointer;
       display: inline-flex;
@@ -128,43 +191,567 @@
       border: 1px solid var(--border-strong);
       background: var(--bg-surface);
       color: var(--text-primary);
-      transition: background 0.15s, border 0.15s;
+      transition: background 0.15s, border-color 0.15s, transform 0.05s;
     }
-    button:hover, .btn:hover { background: var(--bg-surface-hover); }
+
+    .btn:hover { background: var(--bg-surface-hover); }
+    .btn:active { transform: translateY(1px); }
+
     .btn-primary {
       background: #111418;
       color: #FFFFFF;
       border-color: #111418;
     }
+    .btn-primary:hover { background: #2A303A; }
+
     [data-theme="dark"] .btn-primary {
       background: #F3F5F7;
       color: #0A0C0F;
       border-color: #F3F5F7;
     }
+    [data-theme="dark"] .btn-primary:hover { background: #E2E6EA; }
 
-    /* Disclaimer banner */
+    .btn-subtle {
+      border-color: transparent;
+      background: transparent;
+      color: var(--text-secondary);
+    }
+    .btn-subtle:hover {
+      background: var(--bg-surface-subtle);
+      color: var(--text-primary);
+    }
+
+    /* Disclaimer Strip */
     .disclaimer-strip {
       background: #FFFBEB;
       color: #92400E;
       border-bottom: 1px solid #FDE68A;
       font-size: 0.75rem;
-      padding: 4px 1.25rem;
+      padding: 5px 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      font-weight: 500;
     }
+
     [data-theme="dark"] .disclaimer-strip {
       background: #2E1E05;
       color: #FBBF24;
       border-bottom-color: #78350F;
     }
 
-    /* Workbench Layout */
-    .workbench {
+    /* ==========================================================================
+       4. LANDING PAGE LAYOUT & SECTIONS
+       ========================================================================== */
+    .landing-wrapper {
       display: flex;
-      flex: 1;
-      height: calc(100vh - 84px);
+      flex-direction: column;
+      width: 100%;
+      background: var(--bg-canvas);
+    }
+
+    .landing-section {
+      width: 100%;
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem;
+    }
+
+    /* Eyebrows & Section Headers */
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--blue-text);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section-headline {
+      font-family: var(--font-serif);
+      font-size: 2.25rem;
+      line-height: 1.25;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+    }
+
+    .section-lead {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 780px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* HERO SECTION */
+    .hero-container {
+      padding-top: 3.5rem;
+      padding-bottom: 3.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .hero-copy h1 {
+      font-family: var(--font-serif);
+      font-size: 2.75rem;
+      line-height: 1.18;
+      font-weight: 500;
+      letter-spacing: -0.025em;
+      color: var(--text-primary);
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-copy h1 em {
+      font-style: italic;
+      color: var(--blue-text);
+    }
+
+    .hero-copy p {
+      font-size: 1.1rem;
+      line-height: 1.65;
+      color: var(--text-secondary);
+      margin-bottom: 1.75rem;
+    }
+
+    .hero-badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-bottom: 2rem;
+    }
+
+    .trust-pill {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* INGESTION DUAL CARD (HERO RIGHT) */
+    .ingest-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      box-shadow: var(--shadow-card);
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .dropzone-box {
+      border: 2px dashed var(--border-strong);
+      border-radius: 8px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      background: var(--bg-surface-subtle);
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .dropzone-box:hover, .dropzone-box.dragover {
+      border-color: var(--border-focus);
+      background: var(--blue-bg);
+    }
+
+    .dropzone-icon {
+      font-size: 2.25rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .dropzone-title {
+      font-weight: 600;
+      font-size: 1.05rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .dropzone-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .samples-hub {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 1.25rem;
+    }
+
+    .samples-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .sample-buttons-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sample-btn {
+      text-align: left;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sample-btn:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-surface-subtle);
+    }
+
+    .sample-btn-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: block;
+    }
+
+    .sample-btn-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .sample-pill-tag {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    /* SECTION 2: THE ANTI-AI SLOP CONTRAST GRID */
+    .contrast-table-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
       overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+
+    .contrast-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .contrast-header {
+      padding: 1.25rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-chatbots {
+      background: #FDF2F2;
+      color: #991B1B;
+      border-right: 1px solid var(--border-subtle);
+    }
+    [data-theme="dark"] .header-chatbots { background: #2B0E0E; color: #FCA5A5; }
+
+    .header-nyaya {
+      background: #ECFDF5;
+      color: #065F46;
+    }
+    [data-theme="dark"] .header-nyaya { background: #062E23; color: #6EE7B7; }
+
+    .contrast-row {
+      display: contents;
+    }
+
+    .cell-chatbots, .cell-nyaya {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .cell-chatbots {
+      border-right: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+    }
+
+    .cell-nyaya {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+    }
+
+    .cell-title {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    /* SECTION 3: 4 TRUST PILLARS (INVARIANTS AS FEATURES) */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+    }
+
+    .pillar-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1.5rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .pillar-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--bg-surface-subtle);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      width: fit-content;
+    }
+
+    .pillar-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .pillar-card p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* SECTION 4: LIVE ANATOMY OF AN EVIDENCE CARD */
+    .interactive-anatomy-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: var(--shadow-card);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 2.5rem;
+      align-items: center;
+    }
+
+    .mock-evidence-card {
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: var(--bg-surface);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mock-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .confidence-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-green { background: var(--green-bg); color: var(--green-text); border: 1px solid var(--green-border); }
+    .badge-yellow { background: var(--yellow-bg); color: var(--yellow-text); border: 1px solid var(--yellow-border); }
+    .badge-red { background: var(--red-bg); color: var(--red-text); border: 1px solid var(--red-border); }
+
+    .mock-plain-claim {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .mock-quote {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      background: var(--bg-surface-subtle);
+      padding: 8px 12px;
+      border-left: 3px solid var(--border-focus);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .mock-citations-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+
+    .mock-cite-pill {
+      font-family: var(--font-mono);
+      background: var(--blue-bg);
+      color: var(--blue-text);
+      border: 1px solid var(--blue-border);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .mock-statute-pill {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .anatomy-explainer h4 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .anatomy-points {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+    }
+
+    .anatomy-points li strong {
+      color: var(--text-primary);
+    }
+
+    /* SECTION 5: SUPPORTED NOTICES & CHECKLISTS */
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    .doc-type-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .doc-type-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .doc-type-card p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .statute-tag {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--blue-text);
+      font-weight: 600;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      padding: 3rem 1.5rem 2rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: auto;
+    }
+
+    .footer-inner {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-legal-notice {
+      font-size: 0.75rem;
+      line-height: 1.6;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 1.25rem;
+      color: var(--text-muted);
+    }
+
+    /* ==========================================================================
+       5. ACTIVE DUAL-PANE WORKBENCH (FULL EDITORIAL DOSSIER)
+       ========================================================================== */
+    .workbench-container {
+      display: none; /* activated on file load */
+      height: calc(100vh - 84px);
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .workbench-active {
+      display: flex !important;
     }
 
     /* Left Pane: Document Canvas */
@@ -186,6 +773,7 @@
       align-items: center;
       justify-content: space-between;
       font-size: 0.8rem;
+      flex-shrink: 0;
     }
 
     .canvas-viewport {
@@ -220,28 +808,21 @@
     }
     .bbox-highlight {
       position: absolute;
-      background: rgba(245, 158, 11, 0.18);
-      border: 1.5px solid rgba(217, 119, 6, 0.7);
+      background: rgba(245, 158, 11, 0.14);
+      border: 1.5px solid rgba(245, 158, 11, 0.65);
       border-radius: 2px;
       pointer-events: auto;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.15s, border-color 0.15s;
     }
     .bbox-highlight:hover {
-      background: rgba(37, 99, 235, 0.25);
-      border-color: #2563EB;
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+      background: rgba(30, 64, 175, 0.22);
+      border-color: #1E40AF;
     }
     .bbox-highlight.active-pulse {
-      background: rgba(37, 99, 235, 0.35);
-      border: 2px solid #2563EB;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3);
-      animation: pulseHighlight 1.5s infinite;
-    }
-    @keyframes pulseHighlight {
-      0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
-      70% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+      background: rgba(30, 64, 175, 0.3);
+      border: 2px solid #1E40AF;
+      box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.25);
     }
 
     /* Right Pane: Dossier */
@@ -249,110 +830,94 @@
       width: 48%;
       display: flex;
       flex-direction: column;
-      background: var(--bg-surface);
-      overflow-y: auto;
+      background: var(--bg-canvas);
+      overflow: hidden;
     }
 
+    /* Chrono Rail */
     .chrono-rail {
-      background: var(--bg-surface-subtle);
+      background: var(--bg-surface);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 0.75rem 1.25rem;
+      padding: 0.65rem 1.25rem;
       display: flex;
       align-items: center;
       gap: 1rem;
       overflow-x: auto;
       font-size: 0.8rem;
+      flex-shrink: 0;
     }
     .chrono-item {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
-      white-space: nowrap;
-      padding: 4px 8px;
-      background: var(--bg-surface);
+      padding: 4px 10px;
       border-radius: 4px;
+      background: var(--bg-surface-subtle);
       border: 1px solid var(--border-subtle);
+      white-space: nowrap;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
     }
     .chrono-deadline {
-      background: #FEF2F2;
-      border-color: #FECACA;
-      color: #991B1B;
-      font-weight: 600;
-    }
-    [data-theme="dark"] .chrono-deadline {
-      background: #360C0C;
-      border-color: #7F1D1D;
-      color: #F87171;
+      background: var(--red-bg);
+      border-color: var(--red-border);
+      color: var(--red-text);
+      font-weight: 700;
     }
 
     .dossier-content {
+      flex: 1;
+      overflow-y: auto;
       padding: 1.25rem;
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      gap: 1.5rem;
     }
 
-    /* Section Titles */
     .section-title {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
+      font-size: 0.9rem;
       font-weight: 700;
-      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.65rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      color: var(--text-primary);
     }
 
-    /* Evidence Dossier Cards */
     .evidence-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
-      padding: 1rem;
+      padding: 1rem 1.2rem;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.65rem;
       box-shadow: var(--shadow-sm);
-      transition: border 0.15s, box-shadow 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
     .evidence-card:hover {
       border-color: var(--border-strong);
-      box-shadow: var(--shadow-md);
     }
     .evidence-card.active-card {
       border-color: var(--border-focus);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+      box-shadow: var(--shadow-highlight);
     }
 
     .card-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
     }
-    .confidence-badge {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
-    .badge-green { background: var(--green-bg); color: var(--green-text); border: 1px solid var(--green-border); }
-    .badge-yellow { background: var(--yellow-bg); color: var(--yellow-text); border: 1px solid var(--yellow-border); }
-    .badge-red { background: var(--red-bg); color: var(--red-text); border: 1px solid var(--red-border); }
-
     .plain-text-claim {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 500;
-      line-height: 1.4;
       color: var(--text-primary);
     }
     .verbatim-quote {
       font-family: var(--font-serif);
       font-style: italic;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       color: var(--text-secondary);
       background: var(--bg-surface-subtle);
       padding: 0.5rem 0.75rem;
@@ -362,17 +927,6 @@
     }
     .verbatim-quote:hover {
       background: var(--bg-surface-hover);
-    }
-
-    .reasons-box {
-      font-size: 0.78rem;
-      color: var(--text-secondary);
-      background: var(--bg-surface-subtle);
-      padding: 6px 10px;
-      border-radius: 4px;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
     }
 
     .citations-row {
@@ -390,6 +944,7 @@
       padding: 2px 8px;
       border-radius: 4px;
       cursor: pointer;
+      font-weight: 600;
     }
     .statute-pill {
       background: var(--bg-surface-subtle);
@@ -401,6 +956,7 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
+      font-weight: 500;
     }
     .statute-pill:hover { text-decoration: underline; }
 
@@ -435,44 +991,45 @@
       font-size: 0.85rem;
     }
 
-    /* Empty Upload Hero */
-    .hero-upload {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-      text-align: center;
-      gap: 1.25rem;
+    /* Modal / Toast Notifications */
+    #statusToast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 10px 16px;
+      background: #111418;
+      color: #FFFFFF;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      z-index: 1000;
+      display: none;
     }
-    .upload-dropzone {
-      border: 2px dashed var(--border-strong);
-      border-radius: 12px;
-      padding: 3rem 2rem;
-      width: 100%;
-      max-width: 500px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      background: var(--bg-surface);
-      transition: border 0.2s, background 0.2s;
-    }
-    .upload-dropzone:hover {
-      border-color: var(--border-focus);
-      background: var(--bg-surface-hover);
+
+    /* Responsive adjustments */
+    @media (max-width: 960px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .pillars-grid { grid-template-columns: 1fr 1fr; }
+      .contrast-grid { grid-template-columns: 1fr; }
+      .cell-chatbots { border-right: none; }
+      .interactive-anatomy-box { grid-template-columns: 1fr; }
+      .docs-grid { grid-template-columns: 1fr; }
+      .workbench-container { flex-direction: column; height: auto; }
+      .left-pane, .right-pane { width: 100%; height: 500px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Header -->
+  <!-- Top Navigation Bar -->
   <header>
-    <div class="brand">
-      <span>⚖️ NyayaAssist</span>
-      <span class="badge-pill" id="docTypeBadge">No Document Loaded</span>
+    <div class="brand-group">
+      <div class="brand-title" id="navBrandLogo" onclick="showLandingView()">
+        <span>⚖️ NyayaAssist</span>
+      </div>
+      <span class="brand-scale-badge" id="docTypeBadge">LOCAL-FIRST LEGAL INTELLIGENCE</span>
+
+      <!-- Dynamic Selector when Doc is Active (FR-11) -->
       <select id="docTypeSelect" style="display:none; font-size:0.75rem; padding:2px 6px; border-radius:4px; border:1px solid var(--border-strong); background:var(--bg-surface); color:var(--text-primary); cursor:pointer;" title="Change Document Classification (FR-11)">
         <option value="cheque_dishonour_notice">Cheque Dishonour Notice (§138)</option>
         <option value="court_summons">Court Summons (CPC/CrPC)</option>
@@ -484,46 +1041,342 @@
         <option value="unknown">Unknown Legal Document</option>
       </select>
     </div>
-    <div class="actions">
-      <button id="themeToggleBtn" title="Toggle Dark/Light Mode">🌙</button>
-      <button id="icsExportBtn" style="display:none;" title="Download deadlines to Apple/Google calendar">📅 Export .ICS</button>
-      <button id="deleteDocBtn" style="display:none; color: #DC2626;" title="Permanently delete this document and analysis">🗑️ Delete</button>
+
+    <nav class="landing-nav" id="landingNavLinks">
+      <a href="#anti-slop">Why Editorial</a>
+      <a href="#trust-invariants">Safety Invariants</a>
+      <a href="#samples">Sample Notices</a>
+      <a href="#statutes">Verified Law</a>
+      <a href="#supported-docs">Coverage</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="btn btn-subtle" id="backToHomeBtn" style="display:none;" onclick="showLandingView()" title="Return to Overview">← Overview</button>
+      <button class="btn btn-subtle" id="themeToggleBtn" title="Toggle Light/Dark Editorial Theme">🌙</button>
+      <button class="btn btn-primary" id="openUploadBtn" onclick="triggerUpload()">Upload Notice</button>
+      <button class="btn" id="icsExportBtn" style="display:none;" title="Download deadlines to Apple/Google calendar">📅 Export .ICS</button>
+      <button class="btn" id="deleteDocBtn" style="display:none; color: #DC2626;" title="Permanently delete this document and analysis">🗑️ Delete</button>
     </div>
   </header>
 
-  <!-- Statutory Disclaimer Strip -->
+  <!-- Statutory Disclaimer Strip (INV-07) -->
   <div class="disclaimer-strip">
-    <span>⚠️ <strong>Legal Information Only</strong>: Does not constitute legal advice. No advocate-client relationship is formed.</span>
-    <span>DD/MM/YYYY numeric format assumed</span>
+    <span>⚖️ <strong>Legal Information Only</strong>: Does not constitute legal advice. No advocate-client relationship is formed. Verify quotes against original document.</span>
+    <span>DD/MM/YYYY Format • Sovereign On-Device Execution</span>
   </div>
 
-  <!-- Main View -->
-  <div class="workbench" id="workbenchView">
+  <!-- ==========================================================================
+       6. LANDING PAGE VIEW (ACTIVE BY DEFAULT)
+       ========================================================================== -->
+  <div class="landing-wrapper" id="landingView">
     
-    <!-- Upload Dropzone (when no document active) -->
-    <div class="hero-upload" id="uploadHero">
-      <div class="upload-dropzone" id="dropzone">
-        <div style="font-size: 2.5rem;">📄</div>
-        <div>
-          <h2 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 4px;">Upload Legal Notice or Summons</h2>
-          <p style="font-size: 0.85rem; color: var(--text-muted);">PDF, PNG, or JPEG up to 15 MB. Processed 100% locally.</p>
+    <!-- Hero Section -->
+    <div class="landing-section hero-container">
+      <div class="hero-grid">
+        
+        <div class="hero-copy">
+          <div class="kicker">
+            <span>●</span> Sovereign Legal Defense for Indian Citizens
+          </div>
+          <h1>
+            Received a legal notice or summons? Know <em>exactly</em> what it says—without fear or hallucination.
+          </h1>
+          <p>
+            When served with an eviction letter, a Section 138 cheque bounce notice, or a court summons, panic sets in. Traditional chatbots invent phantom precedents and leak your sensitive files to cloud servers. NyayaAssist runs 100% locally: it highlights every fact directly on your original paper, verifies citations against official India Code gazettes, and syncs response deadlines to your calendar.
+          </p>
+
+          <div class="hero-badges-row">
+            <span class="trust-pill">🛡️ 100% Local Inference</span>
+            <span class="trust-pill">🔍 100% Sentence Traceability (INV-01)</span>
+            <span class="trust-pill">📅 Deterministic Deadlines (INV-06)</span>
+            <span class="trust-pill">⚖️ Bar Council UPL Compliant</span>
+            <span class="trust-pill">🔒 DPDPA 2023 24h Shredding</span>
+          </div>
+
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <button class="btn btn-primary" style="padding: 10px 20px; font-size: 0.95rem;" onclick="triggerUpload()">
+              📄 Analyze Your Notice Now
+            </button>
+            <a href="#samples" class="btn" style="padding: 10px 18px; font-size: 0.95rem;">
+              Try Sample Notice ▾
+            </a>
+          </div>
         </div>
-        <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg" style="display:none;">
-        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Select File</button>
+
+        <!-- Ingestion Dual Card -->
+        <div class="ingest-card">
+          <div class="dropzone-box" id="dropzone" onclick="triggerUpload()">
+            <span class="dropzone-icon">📥</span>
+            <div class="dropzone-title">Upload Legal Document</div>
+            <div class="dropzone-sub">Drag & drop or click to browse<br>PDF, PNG, JPG up to 15 MB</div>
+            <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg" style="display:none;">
+          </div>
+          <div id="uploadStatus" style="font-size: 0.8rem; text-align: center; color: var(--text-secondary);"></div>
+
+          <!-- Instant Sample Notice Previews -->
+          <div class="samples-hub" id="samples">
+            <span class="samples-label">Or test with 1-click curated samples:</span>
+            <div class="sample-buttons-list">
+              
+              <div class="sample-btn" onclick="loadSampleNotice('gold_01_nia_138')">
+                <div>
+                  <span class="sample-btn-title">Cheque Dishonour Notice</span>
+                  <span class="sample-btn-desc">₹50,000 claim • 15-day demand • §138 NI Act</span>
+                </div>
+                <span class="sample-pill-tag">NIA §138</span>
+              </div>
+
+              <div class="sample-btn" onclick="loadSampleNotice('gold_03_cpc_summons')">
+                <div>
+                  <span class="sample-btn-title">Civil Court Summons</span>
+                  <span class="sample-btn-desc">Money suit • 30/90-day WS limit • Order VIII CPC</span>
+                </div>
+                <span class="sample-pill-tag">CPC O.VIII</span>
+              </div>
+
+              <div class="sample-btn" onclick="loadSampleNotice('gold_02_tpa_106')">
+                <div>
+                  <span class="sample-btn-title">Tenancy Eviction Notice</span>
+                  <span class="sample-btn-desc">Monthly lease termination • 15-day vacate demand</span>
+                </div>
+                <span class="sample-pill-tag">TPA §106</span>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
       </div>
-      <div id="uploadStatus" style="font-size: 0.85rem; color: var(--text-secondary);"></div>
     </div>
 
-    <!-- Active Document Workspace (Split View) -->
-    <div class="left-pane" id="leftPane" style="display:none;">
+    <!-- Section 2: Anti-AI Slop Contrast Matrix -->
+    <div class="landing-section" id="anti-slop">
+      <div class="kicker">Editorial Docket vs. Conversational AI</div>
+      <h2 class="section-headline">Why High-Stakes Legal Notices Demand an Editorial Workbench, Not a Chatbot.</h2>
+      <p class="section-lead">
+        Legal documents are not casual chat prompts. If an AI misreads a deadline by one day or invents an answer, a tenant loses their home or a citizen faces a non-bailable warrant. We reject purple glowing gradients and decorative conversational filler.
+      </p>
+
+      <div class="contrast-table-container">
+        <div class="contrast-grid">
+          
+          <div class="contrast-header header-chatbots">
+            <span>❌</span> Commercial AI Chatbots & "Legal Copilots"
+          </div>
+          <div class="contrast-header header-nyaya">
+            <span>✅</span> NyayaAssist Sovereign Editorial Workbench
+          </div>
+
+          <div class="contrast-row">
+            <div class="cell-chatbots">
+              <span class="cell-title">Interface Architecture</span>
+              Conversational bubbles with purple ambient glowing gradients and polite filler ("Hello! I hope you're having a wonderful day!"). Document is invisible during analysis.
+            </div>
+            <div class="cell-nyaya">
+              <span class="cell-title">Interface Architecture</span>
+              Integrated Dual-Pane Workbench. High-resolution document canvas on the left with interactive bounding boxes; structured editorial dossier on the right.
+            </div>
+          </div>
+
+          <div class="contrast-row">
+            <div class="cell-chatbots">
+              <span class="cell-title">Grounding & Citations</span>
+              Generates ungrounded summaries. No sentence-level citations; user has no way of knowing which line in their 8-page summons backed the claim.
+            </div>
+            <div class="cell-nyaya">
+              <span class="cell-title">Grounding & Citations</span>
+              <strong>100% Citation Rule (INV-01)</strong>. Every claim explicitly links to its source sentence (<code>[D1]</code>). Clicking the citation smoothly centers and pulses the exact bounding box.
+            </div>
+          </div>
+
+          <div class="contrast-row">
+            <div class="cell-chatbots">
+              <span class="cell-title">Numerical Precision</span>
+              Prone to token hallucination. Frequently confuses <em>Rs. 50,000</em> with <em>Rs. 5,00,000</em> or misplaces decimal points in penal interest claims.
+            </div>
+            <div class="cell-nyaya">
+              <span class="cell-title">Numerical Precision</span>
+              <strong>Token-Boundary Verification (INV-03)</strong>. Regex word-boundary check (<code>\bN\b</code>). If any number in a claim is absent from the cited text, confidence is downgraded to RED.
+            </div>
+          </div>
+
+          <div class="contrast-row">
+            <div class="cell-chatbots">
+              <span class="cell-title">Legal Strategy & Advice</span>
+              Gives reckless, illegal advice ("You should argue the signature is fake", "You will easily win this case"), committing Unauthorised Practice of Law (UPL).
+            </div>
+            <div class="cell-nyaya">
+              <span class="cell-title">Legal Strategy & Advice</span>
+              Strict Bar Council UPL Boundaries. Factual document extraction only. Refuses strategy queries and directs citizens to licensed advocates.
+            </div>
+          </div>
+
+          <div class="contrast-row">
+            <div class="cell-chatbots">
+              <span class="cell-title">Data Privacy & Sovereignty</span>
+              Streams confidential family disputes and business notices to US cloud inference APIs, storing user documents indefinitely.
+            </div>
+            <div class="cell-nyaya">
+              <span class="cell-title">Data Privacy & Sovereignty</span>
+              100% Local Processing. Zero document text in logs or telemetry (INV-10). Automated 24-hour cryptographic data shredder under DPDPA 2023.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: The 4 Core Safety Pillars (Trust Invariants) -->
+    <div class="landing-section" id="trust-invariants" style="border-top: 1px solid var(--border-subtle);">
+      <div class="kicker">Constitutional Invariants</div>
+      <h2 class="section-headline">Engineered on Non-Negotiable Safety Invariants.</h2>
+      <p class="section-lead">
+        Most systems treat safety as a loose prompt instruction. NyayaAssist enforces safety through deterministic Python code gates that cannot be bypassed.
+      </p>
+
+      <div class="pillars-grid">
+        
+        <div class="pillar-card">
+          <span class="pillar-badge">INV-01</span>
+          <h3>100% Citation Guarantee</h3>
+          <p>Every extracted claim must cite at least one numbered document reference. Any ungrounded claim is dropped immediately by the orchestrator.</p>
+        </div>
+
+        <div class="pillar-card">
+          <span class="pillar-badge">INV-06</span>
+          <h3>Chrono-Rail Deadlines</h3>
+          <p>Calculates explicit calendar deadlines from relative phrases (e.g. <em>"within 15 days"</em>). Working-Day Guard prevents inaccurate calendar calculations.</p>
+        </div>
+
+        <div class="pillar-card">
+          <span class="pillar-badge">INV-05</span>
+          <h3>Verified India Code</h3>
+          <p>Direct cross-referencing against verified India Code gazette provisions. Unverified provisions cap confidence scores strictly at Yellow.</p>
+        </div>
+
+        <div class="pillar-card">
+          <span class="pillar-badge">INV-10</span>
+          <h3>Zero Text in Logs</h3>
+          <p>Zero user document text, names, or case specifics ever appear in application logs, CLI output, or error payloads. Total privacy sovereignty.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section 4: Live Anatomy of an Evidence Card -->
+    <div class="landing-section" id="interactive-anatomy" style="border-top: 1px solid var(--border-subtle);">
+      <div class="kicker">Radical Transparency</div>
+      <h2 class="section-headline">Anatomy of an Evidence Card: The Traffic-Light System.</h2>
+      <p class="section-lead">
+        Uncertainty is never tucked away in footnotes. Every piece of information wears its verification status proudly with high-contrast semantic badges.
+      </p>
+
+      <div class="interactive-anatomy-box">
+        
+        <!-- Live Mock Card -->
+        <div class="mock-evidence-card">
+          <div class="mock-card-header">
+            <span class="confidence-badge badge-green">VERIFIED FACT • DIRECT SUPPORT</span>
+            <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#Claim-1</span>
+          </div>
+          <div class="mock-plain-claim">
+            The notice demands payment of ₹50,000 within 15 days under Section 138 of the Negotiable Instruments Act.
+          </div>
+          <div class="mock-quote">
+            "You are hereby called upon to pay the said cheque amount of Rs. 50,000/- within 15 days of receipt of this statutory notice..."
+          </div>
+          <div class="mock-citations-row">
+            <span class="mock-cite-pill">[Page 1 • Block 3]</span>
+            <span class="mock-statute-pill">⚖️ Negotiable Instruments Act §138 (Verified Gazette)</span>
+          </div>
+        </div>
+
+        <!-- Explainer points -->
+        <div class="anatomy-explainer">
+          <h4>Deterministic Three-Tier Scoring</h4>
+          <ul class="anatomy-points">
+            <li>
+              🟢 <strong>GREEN (Verified Fact)</strong>: Direct document quote + Verified India Code statute + High OCR confidence (≥80%).
+            </li>
+            <li>
+              🟡 <strong>YELLOW (Caution / Estimate)</strong>: Computed relative dates, unverified statute provision, or moderate OCR quality (60–79%).
+            </li>
+            <li>
+              🔴 <strong>RED (Critical / Hazard)</strong>: Missing or unsupported numerical figures, low OCR scan (&lt;60%), expired response periods, or strategy refusal.
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section 5: Supported Document Types -->
+    <div class="landing-section" id="supported-docs" style="border-top: 1px solid var(--border-subtle);">
+      <div class="kicker">Broad Indian Jurisprudence Coverage</div>
+      <h2 class="section-headline">Trained on Everyday Legal Documents.</h2>
+      <p class="section-lead">
+        Engineered specifically for the notices ordinary Indian citizens, tenants, and small business owners receive.
+      </p>
+
+      <div class="docs-grid">
+        
+        <div class="doc-type-card">
+          <span class="statute-tag">§138 Negotiable Instruments Act</span>
+          <h3>Cheque Dishonour Notices</h3>
+          <p>Extracts cheque numbers, dishonour memo dates, demanded amounts, and the statutory 15-day payment response window.</p>
+        </div>
+
+        <div class="doc-type-card">
+          <span class="statute-tag">Order VIII Rule 1 CPC</span>
+          <h3>Civil Court Summons</h3>
+          <p>Identifies court bench, suit number, appearance date, and the mandatory 30-day written statement filing deadline (90-day outer ceiling).</p>
+        </div>
+
+        <div class="doc-type-card">
+          <span class="statute-tag">§106 Transfer of Property Act</span>
+          <h3>Eviction & Lease Notices</h3>
+          <p>Verifies monthly tenancy termination periods (15 days for residential, 6 months for manufacturing leases) and vacate demands.</p>
+        </div>
+
+        <div class="doc-type-card">
+          <span class="statute-tag">§69 Consumer Protection Act</span>
+          <h3>Consumer Forum Summons</h3>
+          <p>Detects District/State Consumer Commission appearance dates, complainant allegations, and the 2-year statutory limitation period.</p>
+        </div>
+
+        <div class="doc-type-card">
+          <span class="statute-tag">SARFAESI & Contractual Demand</span>
+          <h3>Loan & Debt Demand Notices</h3>
+          <p>Pinpoints loan account numbers, principal vs penal interest claims, bank branch details, and repossession timelines.</p>
+        </div>
+
+        <div class="doc-type-card">
+          <span class="statute-tag">Direct Taxes & GST</span>
+          <h3>Tax Authority Notices</h3>
+          <p>Surfaces assessment years, tax demand figures, responding officer details, and digital compliance portal links.</p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==========================================================================
+       7. ACTIVE DUAL-PANE WORKBENCH (FULL EDITORIAL DOSSIER)
+       ========================================================================== -->
+  <div class="workbench-container" id="workbenchView">
+    
+    <!-- Left Pane: Document Canvas & Bounding Box Layer -->
+    <div class="left-pane" id="leftPane">
       <div class="canvas-toolbar">
         <div>
           <span>Page <strong id="currPageNum">1</strong> of <strong id="totalPageNum">1</strong></span>
-          <button id="prevPageBtn" style="margin-left:8px; padding:2px 8px;">◀</button>
-          <button id="nextPageBtn" style="padding:2px 8px;">▶</button>
+          <button id="prevPageBtn" class="btn" style="margin-left:8px; padding:2px 8px;">◀</button>
+          <button id="nextPageBtn" class="btn" style="padding:2px 8px;">▶</button>
         </div>
         <div>
-          <button id="matteToggleBtn" style="padding:2px 8px;" title="Matte filter for scanned white paper">☀️ Invert Paper</button>
+          <button id="matteToggleBtn" class="btn" style="padding:2px 8px;" title="Matte filter for scanned white paper">☀️ Invert Paper</button>
         </div>
       </div>
       <div class="canvas-viewport" id="canvasViewport">
@@ -531,11 +1384,13 @@
       </div>
     </div>
 
-    <div class="right-pane" id="rightPane" style="display:none;">
+    <!-- Right Pane: Intelligence Dossier -->
+    <div class="right-pane" id="rightPane">
+      
       <!-- Warnings Alert Banner (FR-06, TD-03) -->
       <div id="warningsBanner" style="display:none; margin: 0.75rem 1.25rem 0; padding: 0.75rem 1rem; border-radius: 6px; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; font-size: 0.82rem;"></div>
 
-      <!-- Chrono Rail -->
+      <!-- Chrono Rail (FR-25) -->
       <div class="chrono-rail" id="chronoRail">
         <!-- Timeline items injected here -->
       </div>
@@ -553,7 +1408,7 @@
         <div>
           <div class="section-title">
             <span>Key Statements & Claims</span>
-            <span id="claimCountBadge" class="badge-pill">0 Claims</span>
+            <span id="claimCountBadge" class="brand-scale-badge">0 Claims</span>
           </div>
           <div id="claimsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
             <!-- Evidence cards injected here -->
@@ -570,7 +1425,7 @@
         <div id="glossarySection" style="display:none;">
           <div class="section-title">
             <span>Legal Terminology Explained</span>
-            <span id="glossaryCountBadge" class="badge-pill">0 Terms</span>
+            <span id="glossaryCountBadge" class="brand-scale-badge">0 Terms</span>
           </div>
           <div id="glossaryList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
         </div>
@@ -585,7 +1440,7 @@
 
         <!-- In-Document Q&A Console -->
         <div>
-          <div class="section-title">Ask This Document</div>
+          <div class="section-title">Ask This Document (Factual Search)</div>
           <div class="qa-box">
             <form class="qa-form" id="qaForm">
               <input type="text" class="qa-input" id="qaInput" placeholder="e.g. What is the cheque amount demanded?">
@@ -600,50 +1455,120 @@
 
   </div>
 
+  <!-- Toast for Background Status -->
+  <div id="statusToast"></div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div style="font-weight: 700; font-size: 1.05rem;">
+          ⚖️ NyayaAssist
+        </div>
+        <div>
+          Local-First Legal Document Intelligence Platform • Version 1.0.0
+        </div>
+      </div>
+      <div class="footer-legal-notice">
+        <strong>Statutory Legal Disclaimer (INV-07)</strong>: NyayaAssist is an open-source, deterministic legal intelligence tool designed to assist citizens in reading legal documents. It provides document extraction, date tracking, and verified statutory references. It does not provide legal advice, representation, or legal opinions. No advocate-client relationship is created. If you have been served with a court summons or legal notice, verify all details against the original physical paper and immediately consult an advocate licensed and enrolled with your State Bar Council.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================================================
+       8. JAVASCRIPT ORCHESTRATION & DUAL-VIEW WORKFLOW
+       ========================================================================== -->
   <script>
-    // State
+    // Application State
     let currentDoc = null;
     let currentPdf = null;
     let currentPage = 1;
     let pageViewports = {};
 
-    // DOM Elements
+    // DOM References
+    const landingView = document.getElementById("landingView");
+    const workbenchView = document.getElementById("workbenchView");
     const dropzone = document.getElementById("dropzone");
     const fileInput = document.getElementById("fileInput");
-    const uploadHero = document.getElementById("uploadHero");
-    const leftPane = document.getElementById("leftPane");
-    const rightPane = document.getElementById("rightPane");
     const uploadStatus = document.getElementById("uploadStatus");
-    const canvasViewport = document.getElementById("canvasViewport");
-    const chronoRail = document.getElementById("chronoRail");
-    const claimsList = document.getElementById("claimsList");
-    const stepsList = document.getElementById("stepsList");
+    const statusToast = document.getElementById("statusToast");
     const docTypeBadge = document.getElementById("docTypeBadge");
-    const claimCountBadge = document.getElementById("claimCountBadge");
+    const docTypeSelect = document.getElementById("docTypeSelect");
+    const backToHomeBtn = document.getElementById("backToHomeBtn");
+    const landingNavLinks = document.getElementById("landingNavLinks");
+    const openUploadBtn = document.getElementById("openUploadBtn");
     const icsExportBtn = document.getElementById("icsExportBtn");
     const deleteDocBtn = document.getElementById("deleteDocBtn");
 
-    // Theme toggle
+    const canvasViewport = document.getElementById("canvasViewport");
+    const chronoRail = document.getElementById("chronoRail");
+    const claimsList = document.getElementById("claimsList");
+    const claimCountBadge = document.getElementById("claimCountBadge");
+    const stepsList = document.getElementById("stepsList");
+
+    // Theme Toggle
     document.getElementById("themeToggleBtn").addEventListener("click", () => {
       const html = document.documentElement;
       const isDark = html.getAttribute("data-theme") === "dark";
       html.setAttribute("data-theme", isDark ? "light" : "dark");
     });
 
-    // File Upload Handlers
+    // View Switching
+    function showLandingView() {
+      landingView.style.display = "block";
+      workbenchView.classList.remove("workbench-active");
+      backToHomeBtn.style.display = "none";
+      landingNavLinks.style.display = "flex";
+      openUploadBtn.style.display = "inline-flex";
+      docTypeBadge.textContent = "LOCAL-FIRST LEGAL INTELLIGENCE";
+      docTypeSelect.style.display = "none";
+      icsExportBtn.style.display = "none";
+      deleteDocBtn.style.display = "none";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showWorkbenchView() {
+      landingView.style.display = "none";
+      workbenchView.classList.add("workbench-active");
+      backToHomeBtn.style.display = "inline-flex";
+      landingNavLinks.style.display = "none";
+      openUploadBtn.style.display = "none";
+      icsExportBtn.style.display = "inline-flex";
+      deleteDocBtn.style.display = "inline-flex";
+    }
+
+    function showToast(msg) {
+      statusToast.textContent = msg;
+      statusToast.style.display = "block";
+      setTimeout(() => { statusToast.style.display = "none"; }, 4000);
+    }
+
+    // Upload Trigger
+    function triggerUpload() {
+      fileInput.click();
+    }
+
     fileInput.addEventListener("change", (e) => {
       if (e.target.files.length) uploadFile(e.target.files[0]);
     });
 
-    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.style.borderColor = "var(--border-focus)"; });
-    dropzone.addEventListener("dragleave", () => { dropzone.style.borderColor = "var(--border-strong)"; });
+    // Drag and drop handlers
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("dragover");
+    });
     dropzone.addEventListener("drop", (e) => {
       e.preventDefault();
+      dropzone.classList.remove("dragover");
       if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
     });
 
+    // File Upload Function
     async function uploadFile(file) {
-      uploadStatus.textContent = "Uploading and analyzing document with deterministic pipeline...";
+      uploadStatus.innerHTML = `<span style="color:var(--blue-text);">Uploading and analyzing with deterministic pipeline...</span>`;
       const formData = new FormData();
       formData.append("file", file);
 
@@ -655,24 +1580,39 @@
         }
         const data = await resp.json();
         currentDoc = data;
+        uploadStatus.textContent = "";
         renderAnalysis(data);
       } catch (err) {
         uploadStatus.innerHTML = `<span style="color:var(--red-text);">Error: ${err.message}</span>`;
       }
     }
 
+    // 1-Click Sample Notice Loader
+    async function loadSampleNotice(sampleId) {
+      showToast("Loading sample notice and running deterministic pipeline...");
+      try {
+        const resp = await fetch(`/api/samples/${sampleId}/load`, { method: "POST" });
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || "Failed to load sample notice");
+        }
+        const data = await resp.json();
+        currentDoc = data;
+        renderAnalysis(data);
+        showToast("Sample loaded successfully!");
+      } catch (e) {
+        alert("Could not load sample: " + e.message);
+      }
+    }
+
+    // Render Full Analysis into Workbench
     function renderAnalysis(data) {
-      uploadHero.style.display = "none";
-      leftPane.style.display = "flex";
-      rightPane.style.display = "flex";
-      icsExportBtn.style.display = "inline-flex";
-      deleteDocBtn.style.display = "inline-flex";
+      showWorkbenchView();
 
       // Set Header Badges and Type Selector (FR-11)
       docTypeBadge.textContent = `${data.doc_type.replace(/_/g, " ").toUpperCase()} (${Math.round(data.type_confidence * 100)}%)`;
       claimCountBadge.textContent = `${data.claims.length} Claims`;
 
-      const docTypeSelect = document.getElementById("docTypeSelect");
       if (docTypeSelect) {
         docTypeSelect.value = data.doc_type;
         docTypeSelect.style.display = "inline-block";
@@ -699,7 +1639,7 @@
       if (warningsBanner) {
         if (data.warnings && data.warnings.length > 0) {
           warningsBanner.style.display = "block";
-          warningsBanner.innerHTML = `<strong>⚠️ Notice Alerts & Verification Notes:</strong><ul style="margin:4px 0 0 1.25rem;">${data.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join("")}</ul>`;
+          warningsBanner.innerHTML = `<strong>⚠️ Verification Alerts & Quality Notes:</strong><ul style="margin:4px 0 0 1.25rem;">${data.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join("")}</ul>`;
         } else {
           warningsBanner.style.display = "none";
         }
@@ -729,7 +1669,7 @@
         }
       }
 
-      // Render Claims
+      // Render Claims (INV-01)
       claimsList.innerHTML = "";
       data.claims.forEach((c, idx) => {
         const card = document.createElement("div");
@@ -779,7 +1719,7 @@
             <div style="background:var(--bg-surface-subtle); border:1px solid var(--border-subtle); border-radius:6px; padding:0.6rem 0.8rem; font-size:0.82rem;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                 <strong>⚖️ ${escapeHtml(s.label)}</strong>
-                <span class="badge-pill" style="color:var(--green-text); background:var(--green-bg); border-color:var(--green-border);">VERIFIED INDIA CODE</span>
+                <span class="brand-scale-badge" style="color:var(--green-text); background:var(--green-bg); border-color:var(--green-border);">VERIFIED INDIA CODE</span>
               </div>
               ${s.source_url ? `<a href="${s.source_url}" target="_blank" style="color:var(--border-focus); font-size:0.75rem; text-decoration:none;">🔗 Official Gazette / India Code Link</a>` : ''}
             </div>
@@ -817,6 +1757,7 @@
       loadDocumentFile(data.doc_id, data.filename);
     }
 
+    // Document Canvas Loader
     async function loadDocumentFile(docId, filename) {
       canvasViewport.innerHTML = "";
       const isPdf = filename.toLowerCase().endsWith(".pdf");
@@ -830,7 +1771,6 @@
           renderPdfPage(currentPdf, p);
         }
       } else {
-        // Image rendering
         const container = document.createElement("div");
         container.className = "page-container";
         container.id = "pageContainer-1";
@@ -902,16 +1842,6 @@
       container.appendChild(overlay);
     }
 
-    function escapeHtml(str) {
-      if (!str) return "";
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
     function focusBoundingBox(blockId, pageNo) {
       document.querySelectorAll(".bbox-highlight").forEach(b => b.classList.remove("active-pulse"));
       if (pageNo) {
@@ -923,6 +1853,16 @@
         bboxEl.classList.add("active-pulse");
         bboxEl.scrollIntoView({ behavior: "smooth", block: "center" });
       }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     // Invert Paper Toggle
@@ -951,7 +1891,8 @@
           alert(`Deletion failed: ${err.detail || 'Unknown error'}`);
           return;
         }
-        location.reload();
+        currentDoc = null;
+        showLandingView();
       } catch (e) {
         alert(`Deletion error: ${e.message}`);
       }

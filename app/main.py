@@ -289,6 +289,74 @@ def update_document_type(doc_id: str, req: DocTypeUpdateRequest):
     return AnalysisResult(**data)
 
 
+@app.get("/api/samples")
+def list_sample_documents():
+    """Lists curated sample legal notices for live demonstration."""
+    gold_path = config.BASE_DIR / "eval" / "gold_samples.json"
+    if not gold_path.exists():
+        return []
+    with open(gold_path, "r", encoding="utf-8") as f:
+        samples = json.load(f)
+    return [
+        {
+            "id": s["id"],
+            "title": s["title"],
+            "doc_type": s["expected_doc_type"],
+            "statute": s["expected_statute"],
+            "has_relative_deadline": s.get("has_relative_deadline", False),
+            "preview": s["raw_text"][:140] + "..."
+        }
+        for s in samples
+    ]
+
+
+@app.post("/api/samples/{sample_id}/load", response_model=AnalysisResult)
+def load_sample_document(sample_id: str):
+    """
+    Synthesizes a PDF from a curated sample legal notice and executes
+    the complete deterministic analysis pipeline, returning the AnalysisResult.
+    """
+    gold_path = config.BASE_DIR / "eval" / "gold_samples.json"
+    if not gold_path.exists():
+        raise HTTPException(status_code=404, detail="Sample database not found.")
+    with open(gold_path, "r", encoding="utf-8") as f:
+        samples = json.load(f)
+
+    matched = next((s for s in samples if s["id"] == sample_id), None)
+    if not matched:
+        raise HTTPException(status_code=404, detail=f"Sample '{sample_id}' not found.")
+
+    import pymupdf as fitz
+    doc_id = uuid.uuid4().hex
+    filename = f"{sample_id}.pdf"
+    pdf_path = config.UPLOADS_DIR / f"{doc_id}.pdf"
+
+    # Generate PDF with clean typography and layout
+    doc = fitz.open()
+    page = doc.new_page(width=595.28, height=841.89)  # standard A4
+    rect = fitz.Rect(54, 72, 541, 769)
+    page.insert_textbox(rect, matched["raw_text"], fontsize=11, fontname="helv", align=fitz.TEXT_ALIGN_LEFT)
+    doc.save(pdf_path)
+    doc.close()
+
+    # Parse layout and analyze
+    pages, blocks, warnings = parser.parse_document(pdf_path, doc_id)
+    analysis_result, analysis_run = analyzer.analyze_document_pipeline(
+        file_path=pdf_path,
+        doc_id=doc_id,
+        filename=filename,
+        pages=pages,
+        blocks=blocks,
+        warnings=warnings
+    )
+
+    record_path = config.RECORDS_DIR / f"{doc_id}.json"
+    with open(record_path, "w", encoding="utf-8") as f:
+        f.write(analysis_result.model_dump_json(indent=2))
+
+    return analysis_result
+
+
 @app.delete("/api/documents/{doc_id}")
 def delete_document(doc_id: str):
     """Permanently deletes original upload and analysis records (FR-100)."""

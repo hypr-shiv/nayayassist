@@ -86,7 +86,7 @@ class GeminiProvider(LLMProvider):
             }
         }
         
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=10.0) as client:
             resp = client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()

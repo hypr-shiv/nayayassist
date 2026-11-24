@@ -32,3 +32,20 @@ def test_magic_signature_rejects_spoofed_pdf():
         upload_and_analyze_document(upload_file)
     assert exc_info.value.status_code == 415
     assert "Unsupported or mismatched media type" in exc_info.value.detail
+
+
+def test_list_and_load_sample_documents(monkeypatch):
+    from app.main import list_sample_documents, load_sample_document
+    monkeypatch.setattr(config, "LLM_PROVIDER", "none")
+    
+    samples = list_sample_documents()
+    assert len(samples) >= 3
+    sample_ids = [s["id"] for s in samples]
+    assert "gold_01_nia_138" in sample_ids
+    
+    doc_data = load_sample_document("gold_01_nia_138")
+    assert doc_data.doc_type == "cheque_dishonour_notice"
+    assert len(doc_data.claims) > 0
+    assert doc_data.doc_id is not None
+
+
