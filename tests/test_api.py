@@ -7,8 +7,18 @@ Synchronous execution for pure determinism and zero threading latency.
 import io
 import pytest
 from fastapi import HTTPException, UploadFile
-from app.main import health_check, search_statute_index, upload_and_analyze_document
+from app.main import (
+    health_check,
+    search_statute_index,
+    upload_and_analyze_document,
+    list_sample_documents,
+    load_sample_document,
+)
+from app.models import AuthUser
 from app import config
+
+
+_TEST_USER = AuthUser(uid_hash="test_user_uid_hash_001", provider="google")
 
 
 def test_health_check_endpoint():
@@ -29,22 +39,22 @@ def test_magic_signature_rejects_spoofed_pdf():
     fake_pdf = io.BytesIO(b"This is just plain text, not a real PDF file!")
     upload_file = UploadFile(filename="spoofed.pdf", file=fake_pdf)
     with pytest.raises(HTTPException) as exc_info:
-        upload_and_analyze_document(upload_file)
+        upload_and_analyze_document(file=upload_file, current_user=_TEST_USER)
     assert exc_info.value.status_code == 415
     assert "Unsupported or mismatched media type" in exc_info.value.detail
 
 
 def test_list_and_load_sample_documents(monkeypatch):
-    from app.main import list_sample_documents, load_sample_document
     monkeypatch.setattr(config, "LLM_PROVIDER", "none")
-    
+
     samples = list_sample_documents()
     assert len(samples) >= 3
     sample_ids = [s["id"] for s in samples]
     assert "gold_01_nia_138" in sample_ids
-    
-    doc_data = load_sample_document("gold_01_nia_138")
+
+    doc_data = load_sample_document("gold_01_nia_138", current_user=_TEST_USER)
     assert doc_data.doc_type == "cheque_dishonour_notice"
+    assert doc_data.owner_uid_hash == _TEST_USER.uid_hash
     assert len(doc_data.claims) > 0
     assert doc_data.doc_id is not None
 

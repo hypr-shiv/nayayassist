@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — NyayaAssist Sovereign Legal Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #F8F9FA;
+      --bg-surface: #FFFFFF;
+      --bg-surface-subtle: #F1F3F5;
+      --bg-surface-hover: #E9ECEF;
+      --border-subtle: #E2E6EA;
+      --border-strong: #CED4DA;
+      --border-focus: #1E40AF;
+
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-serif: 'Newsreader', Georgia, serif;
+      --font-mono: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
+
+      --text-primary: #111418;
+      --text-secondary: #495057;
+      --text-muted: #6C757D;
+
+      --green-text: #065F46;
+      --green-bg: #ECFDF5;
+      --green-border: #A7F3D0;
+
+      --yellow-text: #92400E;
+      --yellow-bg: #FFFBEB;
+      --yellow-border: #FDE68A;
+
+      --red-text: #991B1B;
+      --red-bg: #FEF2F2;
+      --red-border: #FECACA;
+
+      --blue-text: #1E40AF;
+      --blue-bg: #EFF6FF;
+      --blue-border: #BFDBFE;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    [data-theme="dark"] {
+      --bg-canvas: #0A0C0F;
+      --bg-surface: #12151A;
+      --bg-surface-subtle: #191D24;
+      --bg-surface-hover: #222730;
+      --border-subtle: #242A34;
+      --border-strong: #374151;
+      --border-focus: #60A5FA;
+
+      --text-primary: #F3F5F7;
+      --text-secondary: #9CA3AF;
+      --text-muted: #6B7280;
+
+      --green-text: #34D399;
+      --green-bg: #062E23;
+      --green-border: #047857;
+
+      --yellow-text: #FBBF24;
+      --yellow-bg: #2E1E05;
+      --yellow-border: #78350F;
+
+      --red-text: #F87171;
+      --red-bg: #360C0C;
+      --red-border: #7F1D1D;
+
+      --blue-text: #60A5FA;
+      --blue-bg: #0C244A;
+      --blue-border: #1D4ED8;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input { font-family: inherit; }
+
+    header {
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 1.5rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-group { display: flex; align-items: center; gap: 0.75rem; }
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .brand-scale-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--bg-surface-subtle);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .disclaimer-strip {
+      background: var(--yellow-bg);
+      color: var(--yellow-text);
+      border-bottom: 1px solid var(--yellow-border);
+      font-size: 0.75rem;
+      padding: 5px 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 500;
+    }
+
+    .btn {
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn:hover:not(:disabled) { background: var(--bg-surface-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary {
+      background: #111418;
+      color: #FFFFFF;
+      border-color: #111418;
+    }
+    .btn-primary:hover:not(:disabled) { background: #2A303A; }
+    [data-theme="dark"] .btn-primary {
+      background: #F3F5F7;
+      color: #0A0C0F;
+      border-color: #F3F5F7;
+    }
+    [data-theme="dark"] .btn-primary:hover:not(:disabled) { background: #E2E6EA; }
+    .btn-subtle {
+      border-color: transparent;
+      background: transparent;
+      color: var(--text-secondary);
+    }
+    .btn-subtle:hover { background: var(--bg-surface-subtle); color: var(--text-primary); }
+
+    .main-container {
+      width: 100%;
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 460px;
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--blue-text);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+      display: inline-block;
+    }
+
+    .editorial-title {
+      font-family: var(--font-serif);
+      font-size: 2.35rem;
+      line-height: 1.2;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+
+    .editorial-lead {
+      font-size: 0.98rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.75rem;
+    }
+
+    .assurance-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .assurance-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1rem 1.15rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .assurance-item h3 {
+      font-size: 0.92rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .assurance-item p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+
+    .auth-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1.75rem;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .auth-card-header {
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 0.9rem;
+    }
+
+    .auth-card-header h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .auth-card-header p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .consent-box {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 0.85rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .consent-box input[type="checkbox"] {
+      margin-top: 3px;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--border-focus);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .google-btn {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .google-btn:hover:not(:disabled) {
+      background: var(--bg-surface-subtle);
+      border-color: var(--border-focus);
+    }
+    .google-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .auth-tab {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .auth-tab.active {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .form-group label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .form-input {
+      padding: 9px 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+    }
+
+    .notice-box {
+      border-radius: 6px;
+      padding: 0.75rem 0.9rem;
+      font-size: 0.8rem;
+      display: none;
+    }
+    .notice-error {
+      background: var(--red-bg);
+      color: var(--red-text);
+      border: 1px solid var(--red-border);
+    }
+    .notice-info {
+      background: var(--blue-bg);
+      color: var(--blue-text);
+      border: 1px solid var(--blue-border);
+    }
+    .notice-warn {
+      background: var(--yellow-bg);
+      color: var(--yellow-text);
+      border: 1px solid var(--yellow-border);
+    }
+    .notice-success {
+      background: var(--green-bg);
+      color: var(--green-text);
+      border: 1px solid var(--green-border);
+    }
+
+    .code-snippet {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      padding: 0.5rem 0.65rem;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+      color: var(--text-primary);
+      overflow-x: auto;
+    }
+
+    .card-footer-links {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+    .card-footer-links a:hover, .text-link:hover {
+      color: var(--blue-text);
+      text-decoration: underline;
+    }
+    .text-link {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    footer {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      padding: 1.25rem 1.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    @media (max-width: 880px) {
+      .main-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 2rem 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-group">
+      <a href="/" class="brand-title"><span>⚖️ NyayaAssist</span></a>
+      <span class="brand-scale-badge">FIREBASE IDENTITY</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <a href="/" class="btn btn-subtle">← Back to Home</a>
+      <button class="btn btn-subtle" id="themeToggleBtn" title="Toggle Light/Dark Theme">🌙</button>
+    </div>
+  </header>
+
+  <div class="disclaimer-strip">
+    <span>⚖️ <strong>Legal Information Only</strong>: Authentication secures your workspace. Document text stays local and is never uploaded to Firebase.</span>
+    <span>DPDPA 2023 §6 Consent Enforced</span>
+  </div>
+
+  <main class="main-container">
+
+    <!-- Left Column: Privacy & Consent Context -->
+    <section>
+      <span class="kicker">Sovereign Authentication • Zero Document Leakage</span>
+      <h1 class="editorial-title">Sign in to manage your legal notices with confidence.</h1>
+      <p class="editorial-lead">
+        NyayaAssist uses Google Firebase strictly for identity authentication. Your uploaded PDFs, OCR text, and court summons remain on your local machine and are never transmitted to Firebase servers.
+      </p>
+
+      <div class="assurance-list">
+        <div class="assurance-item">
+          <h3>🔒 Strict Document Isolation</h3>
+          <p>Session cookies are signed with HMAC-SHA256 (<code>HttpOnly</code>) and bound to a non-reversible SHA-256 hash of your Firebase UID.</p>
+        </div>
+        <div class="assurance-item">
+          <h3>📋 DPDPA 2023 Informed Consent</h3>
+          <p>Processing never starts before your explicit consent. Automated 24-hour retention shredding applies unless you delete earlier.</p>
+        </div>
+        <div class="assurance-item">
+          <h3>🛡️ Zero PII in Server Logs (INV-10)</h3>
+          <p>Your email address, display name, and ID tokens are never written to application logs or audit trails.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Firebase Login Card -->
+    <section class="auth-card">
+      <div class="auth-card-header">
+        <h2 id="authCardTitle">Citizen Sign In</h2>
+        <p id="authCardSubtitle">Authenticate with Google or email via Firebase Auth</p>
+      </div>
+
+      <!-- Active Session Box (shown if already logged in) -->
+      <div id="alreadyLoggedInBox" class="notice-box notice-success">
+        <strong>✓ Active Session Found</strong>
+        <p id="activeUserSummary" style="margin-top:4px;"></p>
+        <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
+          <a href="/" class="btn btn-primary" style="flex:1;">Open Workbench →</a>
+          <a href="/logout" class="btn">Sign Out</a>
+        </div>
+      </div>
+
+      <!-- Unconfigured Firebase Guidance -->
+      <div id="firebaseMissingBox" class="notice-box notice-warn">
+        <strong>Firebase Web Config Not Set in <code>.env</code></strong>
+        <p style="margin-top:4px;">Add your Firebase project web credentials to <code>.env</code> and restart the server to enable Google &amp; Email login:</p>
+        <pre class="code-snippet">FIREBASE_API_KEY=...
+FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_APP_ID=...</pre>
+        <div style="margin-top:0.65rem;">
+          <a href="/" class="btn" style="width:100%;">← Back to Product Overview</a>
+        </div>
+      </div>
+
+      <!-- Feedback Banners -->
+      <div id="errorBox" class="notice-box notice-error"></div>
+      <div id="infoBox" class="notice-box notice-info"></div>
+
+      <!-- Explicit DPDPA §6 Consent -->
+      <label class="consent-box" for="dpdpaConsent">
+        <input type="checkbox" id="dpdpaConsent" checked>
+        <span>
+          <strong>DPDPA §6 Consent:</strong> I understand NyayaAssist provides factual document extraction only (not legal advice), stores documents locally, and may erase data after 24 hours.
+        </span>
+      </label>
+
+      <!-- Google Sign-In Button -->
+      <button type="button" id="googleSignInBtn" class="google-btn">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+
+      <div class="divider">or use email</div>
+
+      <!-- Mode Switch Tabs -->
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" id="tabSignIn" role="tab">Sign In</button>
+        <button type="button" class="auth-tab" id="tabSignUp" role="tab">Create Account</button>
+      </div>
+
+      <!-- Email/Password Form -->
+      <form id="emailAuthForm" style="display:flex; flex-direction:column; gap:0.85rem;">
+        <div class="form-group">
+          <label for="emailInput">Email Address</label>
+          <input type="email" id="emailInput" class="form-input" placeholder="citizen@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="passwordInput">Password</label>
+          <input type="password" id="passwordInput" class="form-input" placeholder="Minimum 6 characters" minlength="6" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="emailSubmitBtn" class="btn btn-primary" style="width:100%; padding:10px;">
+          Sign In with Email
+        </button>
+      </form>
+
+      <div class="card-footer-links">
+        <button type="button" id="resetPasswordBtn" class="text-link">Forgot password?</button>
+        <a href="/">← Back to Product Overview</a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    NyayaAssist • Sovereign Legal Document Intelligence • Legal information only, not legal advice.
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      sendPasswordResetEmail
+    } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+    // Theme Sync
+    const savedTheme = localStorage.getItem("nyaya_theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    document.getElementById("themeToggleBtn").addEventListener("click", () => {
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("nyaya_theme", next);
+    });
+
+    // DOM Elements
+    const consentCheckbox = document.getElementById("dpdpaConsent");
+    const googleBtn = document.getElementById("googleSignInBtn");
+    const emailForm = document.getElementById("emailAuthForm");
+    const emailInput = document.getElementById("emailInput");
+    const passwordInput = document.getElementById("passwordInput");
+    const emailSubmitBtn = document.getElementById("emailSubmitBtn");
+    const resetPasswordBtn = document.getElementById("resetPasswordBtn");
+    const tabSignIn = document.getElementById("tabSignIn");
+    const tabSignUp = document.getElementById("tabSignUp");
+    const errorBox = document.getElementById("errorBox");
+    const infoBox = document.getElementById("infoBox");
+    const firebaseMissingBox = document.getElementById("firebaseMissingBox");
+    const alreadyLoggedInBox = document.getElementById("alreadyLoggedInBox");
+    const activeUserSummary = document.getElementById("activeUserSummary");
+
+    let authMode = "signin"; // "signin" | "signup"
+    let firebaseAuth = null;
+
+    function showError(msg) {
+      infoBox.style.display = "none";
+      errorBox.textContent = msg;
+      errorBox.style.display = "block";
+    }
+
+    function showInfo(msg) {
+      errorBox.style.display = "none";
+      infoBox.textContent = msg;
+      infoBox.style.display = "block";
+    }
+
+    function clearMessages() {
+      errorBox.style.display = "none";
+      infoBox.style.display = "none";
+    }
+
+    function friendlyFirebaseError(err) {
+      const code = err?.code || "";
+      const map = {
+        "auth/popup-closed-by-user": "Google sign-in popup was closed before completion.",
+        "auth/cancelled-popup-request": "Sign-in request was cancelled.",
+        "auth/invalid-credential": "Invalid email or password.",
+        "auth/user-not-found": "No account found for this email address.",
+        "auth/wrong-password": "Incorrect password.",
+        "auth/email-already-in-use": "An account with this email already exists. Switch to Sign In.",
+        "auth/weak-password": "Password must be at least 6 characters long.",
+        "auth/too-many-requests": "Too many failed attempts. Please wait briefly and try again.",
+        "auth/operation-not-allowed": "This sign-in provider is not enabled yet in Firebase Console > Authentication > Sign-in method.",
+        "auth/configuration-not-found": "Firebase Authentication is not initialized in Firebase Console > Authentication (click Get Started and enable Google / Email providers).",
+        "auth/unauthorized-domain": "This domain must be authorized in Firebase Console > Authentication > Settings (use http://localhost:8000 or add 127.0.0.1)."
+      };
+      return map[code] || err?.message || "Authentication failed. Please try again.";
+    }
+
+    // Tab switching
+    tabSignIn.addEventListener("click", () => {
+      authMode = "signin";
+      tabSignIn.classList.add("active");
+      tabSignUp.classList.remove("active");
+      emailSubmitBtn.textContent = "Sign In with Email";
+      passwordInput.setAttribute("autocomplete", "current-password");
+      clearMessages();
+    });
+
+    tabSignUp.addEventListener("click", () => {
+      authMode = "signup";
+      tabSignUp.classList.add("active");
+      tabSignIn.classList.remove("active");
+      emailSubmitBtn.textContent = "Create Firebase Account";
+      passwordInput.setAttribute("autocomplete", "new-password");
+      clearMessages();
+    });
+
+    function setControlsDisabled(disabled) {
+      googleBtn.disabled = disabled;
+      emailSubmitBtn.disabled = disabled;
+      resetPasswordBtn.disabled = disabled;
+    }
+
+    async function establishBackendSession(userCredential) {
+      showInfo("Verifying Google Firebase identity and creating secure local session...");
+      const idToken = await userCredential.user.getIdToken();
+      const resp = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_token: idToken,
+          consent_accepted: consentCheckbox.checked,
+          consent_version: "v1.0-2026"
+        })
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.detail || "Server rejected session verification.");
+      }
+      const params = new URLSearchParams(window.location.search);
+      const sample = params.get("sample");
+      if (sample && /^[a-zA-Z0-9_-]+$/.test(sample)) {
+        window.location.href = `/?sample=${encodeURIComponent(sample)}`;
+      } else {
+        window.location.href = "/";
+      }
+    }
+
+    async function bootstrapAuth() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("expired") === "1") {
+        showInfo("Please sign in with Google Firebase to access the NyayaAssist workbench.");
+      }
+      if (params.get("sample")) {
+        showInfo("Sign in first to open and analyze the selected sample notice.");
+      }
+
+      // 1. Check if already signed in
+      try {
+        const meResp = await fetch("/api/auth/me");
+        if (meResp.ok) {
+          const meData = await meResp.json();
+          if (meData.authenticated && meData.user) {
+            const label = meData.user.display_name || meData.user.email_masked || "Authenticated User";
+            activeUserSummary.textContent = `Signed in as ${label} (${meData.user.provider}).`;
+            alreadyLoggedInBox.style.display = "block";
+          }
+        }
+      } catch (_) {}
+
+      // 2. Load Firebase public config
+      try {
+        const cfgResp = await fetch("/api/auth/config");
+        const cfg = await cfgResp.json();
+        if (!cfg.configured) {
+          firebaseMissingBox.style.display = "block";
+          setControlsDisabled(true);
+          return;
+        }
+        const app = initializeApp({
+          apiKey: cfg.apiKey,
+          authDomain: cfg.authDomain,
+          projectId: cfg.projectId,
+          storageBucket: cfg.storageBucket,
+          messagingSenderId: cfg.messagingSenderId,
+          appId: cfg.appId
+        });
+        firebaseAuth = getAuth(app);
+      } catch (err) {
+        showError("Could not load authentication configuration from server.");
+        setControlsDisabled(true);
+      }
+    }
+
+    googleBtn.addEventListener("click", async () => {
+      clearMessages();
+      if (!consentCheckbox.checked) {
+        showError("Please accept the DPDPA §6 informed consent checkbox before signing in.");
+        return;
+      }
+      if (!firebaseAuth) return;
+      try {
+        setControlsDisabled(true);
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        const cred = await signInWithPopup(firebaseAuth, provider);
+        await establishBackendSession(cred);
+      } catch (err) {
+        showError(friendlyFirebaseError(err));
+        setControlsDisabled(false);
+      }
+    });
+
+    emailForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearMessages();
+      if (!consentCheckbox.checked) {
+        showError("Please accept the DPDPA §6 informed consent checkbox before signing in.");
+        return;
+      }
+      if (!firebaseAuth) return;
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      try {
+        setControlsDisabled(true);
+        const cred = authMode === "signup"
+          ? await createUserWithEmailAndPassword(firebaseAuth, email, password)
+          : await signInWithEmailAndPassword(firebaseAuth, email, password);
+        await establishBackendSession(cred);
+      } catch (err) {
+        showError(friendlyFirebaseError(err));
+        setControlsDisabled(false);
+      }
+    });
+
+    resetPasswordBtn.addEventListener("click", async () => {
+      clearMessages();
+      if (!firebaseAuth) return;
+      const email = emailInput.value.trim();
+      if (!email) {
+        showError("Enter your email address above first, then click Forgot password.");
+        emailInput.focus();
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(firebaseAuth, email);
+        showInfo("If an account exists for that email, Firebase has dispatched a password reset link.");
+      } catch (err) {
+        showError(friendlyFirebaseError(err));
+      }
+    });
+
+    bootstrapAuth();
+  </script>
+</body>
+</html>

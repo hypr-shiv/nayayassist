@@ -12,13 +12,16 @@ import uuid
 from pathlib import Path
 from typing import Optional, Literal
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, status, Query, Response
+from fastapi import FastAPI, UploadFile, File, HTTPException, status, Query, Response, Request, Depends
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import config, parser, analyzer, retrieval, nlp
-from app.models import AnalysisResult, Answer, QuestionRequest, DocTypeUpdateRequest
+from app import config, parser, analyzer, retrieval, nlp, auth
+from app.models import (
+    AnalysisResult, Answer, QuestionRequest, DocTypeUpdateRequest,
+    FirebasePublicConfig, FirebaseSessionRequest, AuthStatusResponse, AuthUser
+)
 from app.calendar_export import generate_ics_calendar
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -35,6 +38,36 @@ def validate_doc_id(doc_id: str) -> str:
             detail="Invalid doc_id format: must be a 32-character hexadecimal string."
         )
     return doc_id
+
+
+def require_authenticated_user(request: Request) -> AuthUser:
+    """Requires a valid HMAC-signed session issued from verified Firebase Auth."""
+    cookie_val = request.cookies.get(config.SESSION_COOKIE_NAME)
+    user = auth.verify_session_cookie(cookie_val)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please sign in to use NyayaAssist."
+        )
+    return user
+
+
+def _load_authorized_record(doc_id: str, current_user: AuthUser):
+    """Validates doc_id format, existence, and strict owner isolation (TD-14)."""
+    clean_id = validate_doc_id(doc_id)
+    record_path = config.RECORDS_DIR / f"{clean_id}.json"
+    if not record_path.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document record not found.")
+
+    with open(record_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if data.get("owner_uid_hash") != current_user.uid_hash:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: document does not belong to your authenticated session."
+        )
+    return clean_id, record_path, data
 
 app = FastAPI(
     title="NyayaAssist API",
@@ -65,6 +98,24 @@ def serve_index():
     return {"message": "NyayaAssist API is running. Mount static/index.html to view web interface."}
 
 
+@app.get("/login")
+def serve_login():
+    """Serves the Google Firebase authentication login page."""
+    login_file = config.BASE_DIR / "static" / "login.html"
+    if login_file.exists():
+        return FileResponse(login_file)
+    raise HTTPException(status_code=404, detail="Login page not found.")
+
+
+@app.get("/logout")
+def serve_logout():
+    """Serves the Firebase sign-out and session revocation confirmation page."""
+    logout_file = config.BASE_DIR / "static" / "logout.html"
+    if logout_file.exists():
+        return FileResponse(logout_file)
+    raise HTTPException(status_code=404, detail="Logout page not found.")
+
+
 @app.get("/api/health")
 def health_check():
     """Liveness check and active provider reporting."""
@@ -73,15 +124,95 @@ def health_check():
         "llm_provider": config.LLM_PROVIDER,
         "data_mode": config.DATA_MODE,
         "max_upload_mb": config.MAX_UPLOAD_MB,
+        "firebase_configured": auth.is_firebase_configured(),
+        "disclaimer": config.DISCLAIMER
+    }
+
+
+@app.get("/api/auth/config", response_model=FirebasePublicConfig)
+def get_auth_config():
+    """Returns public Firebase Web SDK configuration for client initialization."""
+    return auth.get_public_firebase_config()
+
+
+@app.get("/api/auth/me", response_model=AuthStatusResponse)
+def get_current_user(request: Request):
+    """Checks the signed session cookie and returns active user status."""
+    cookie_val = request.cookies.get(config.SESSION_COOKIE_NAME)
+    user = auth.verify_session_cookie(cookie_val)
+    return AuthStatusResponse(
+        authenticated=user is not None,
+        firebase_configured=auth.is_firebase_configured(),
+        user=user,
+        disclaimer=config.DISCLAIMER
+    )
+
+
+@app.post("/api/auth/session", response_model=AuthStatusResponse)
+def create_firebase_session(req: FirebaseSessionRequest, request: Request, response: Response):
+    """
+    Exchanges a verified Google Firebase ID token for an HttpOnly HMAC-signed
+    NyayaAssist session cookie after confirming DPDPA §6 consent.
+    """
+    if not req.consent_accepted:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Explicit DPDPA privacy & legal-information-only consent must be accepted before sign-in."
+        )
+
+    try:
+        verified_user = auth.verify_firebase_id_token(req.id_token)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+
+    cookie_value, auth_user = auth.create_session_token(
+        verified_user=verified_user,
+        consent_version=req.consent_version
+    )
+
+    is_https = request.url.scheme == "https"
+    response.set_cookie(
+        key=config.SESSION_COOKIE_NAME,
+        value=cookie_value,
+        max_age=config.SESSION_TTL_SECONDS,
+        httponly=True,
+        samesite="lax",
+        secure=is_https,
+        path="/"
+    )
+
+    return AuthStatusResponse(
+        authenticated=True,
+        firebase_configured=True,
+        user=auth_user,
+        disclaimer=config.DISCLAIMER
+    )
+
+
+@app.post("/api/auth/logout")
+def logout_session(request: Request, response: Response):
+    """Revokes server-side session and clears the nyaya_session cookie."""
+    cookie_val = request.cookies.get(config.SESSION_COOKIE_NAME)
+    revoked = auth.revoke_session_cookie(cookie_val)
+    response.delete_cookie(key=config.SESSION_COOKIE_NAME, path="/")
+    return {
+        "status": "logged_out",
+        "session_revoked": revoked,
         "disclaimer": config.DISCLAIMER
     }
 
 
 @app.post("/api/documents", response_model=AnalysisResult)
-def upload_and_analyze_document(file: UploadFile = File(...)):
+def upload_and_analyze_document(
+    file: UploadFile = File(...),
+    current_user: AuthUser = Depends(require_authenticated_user)
+):
     """
     Accepts PDF, PNG, or JPEG file upload, verifies magic signature,
     enforces streamed size limits, parses layout, and executes analysis pipeline.
+    Requires authenticated session.
     """
     if not file.filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No filename provided.")
@@ -149,6 +280,7 @@ def upload_and_analyze_document(file: UploadFile = File(...)):
         blocks=blocks,
         warnings=warnings
     )
+    result.owner_uid_hash = current_user.uid_hash
 
     # 5. Persist Analysis Record (JSON)
     record_path = config.RECORDS_DIR / f"{doc_id}.json"
@@ -159,24 +291,23 @@ def upload_and_analyze_document(file: UploadFile = File(...)):
 
 
 @app.get("/api/documents/{doc_id}", response_model=AnalysisResult)
-def get_document_analysis(doc_id: str):
-    """Retrieves full analysis record by doc_id."""
-    clean_id = validate_doc_id(doc_id)
-    record_path = config.RECORDS_DIR / f"{clean_id}.json"
-    
-    if not record_path.exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document record not found.")
-
-    with open(record_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+def get_document_analysis(
+    doc_id: str,
+    current_user: AuthUser = Depends(require_authenticated_user)
+):
+    """Retrieves full analysis record by doc_id (authenticated owner only)."""
+    _, _, data = _load_authorized_record(doc_id, current_user)
     return AnalysisResult(**data)
 
 
 @app.get("/api/documents/{doc_id}/file")
-def get_original_file(doc_id: str):
-    """Serves the original uploaded file for the document canvas viewer."""
-    clean_id = validate_doc_id(doc_id)
-    
+def get_original_file(
+    doc_id: str,
+    current_user: AuthUser = Depends(require_authenticated_user)
+):
+    """Serves the original uploaded file for the document canvas viewer (authenticated owner only)."""
+    clean_id, _, _ = _load_authorized_record(doc_id, current_user)
+
     # Locate file in uploads directory
     matched_files = list(config.UPLOADS_DIR.glob(f"{clean_id}.*"))
     if not matched_files or not matched_files[0].exists():
@@ -188,17 +319,13 @@ def get_original_file(doc_id: str):
 
 
 @app.post("/api/documents/{doc_id}/ask", response_model=Answer)
-def ask_document_question(doc_id: str, req: QuestionRequest):
-    """In-document Q&A with extractive fallback (FR-60..64)."""
-    clean_id = validate_doc_id(doc_id)
-    record_path = config.RECORDS_DIR / f"{clean_id}.json"
-    
-    if not record_path.exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document record not found.")
-
-    with open(record_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-        
+def ask_document_question(
+    doc_id: str,
+    req: QuestionRequest,
+    current_user: AuthUser = Depends(require_authenticated_user)
+):
+    """In-document Q&A with extractive fallback (FR-60..64, authenticated owner only)."""
+    _, _, data = _load_authorized_record(doc_id, current_user)
     analysis = AnalysisResult(**data)
     answer = analyzer.answer_question(analysis.blocks, req.question)
     return answer
@@ -207,20 +334,13 @@ def ask_document_question(doc_id: str, req: QuestionRequest):
 @app.get("/api/documents/{doc_id}/calendar.ics")
 def export_calendar(
     doc_id: str,
-    kind: Literal["deadline", "all"] = Query("deadline", description="Whether to include deadlines only or all dates")
+    kind: Literal["deadline", "all"] = Query("deadline", description="Whether to include deadlines only or all dates"),
+    current_user: AuthUser = Depends(require_authenticated_user)
 ):
-    """Exports response deadlines as an RFC 5545 .ics calendar file (FR-90, FR-91)."""
-    clean_id = validate_doc_id(doc_id)
-    record_path = config.RECORDS_DIR / f"{clean_id}.json"
-    
-    if not record_path.exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document record not found.")
-
-    with open(record_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-        
+    """Exports response deadlines as an RFC 5545 .ics calendar file (FR-90, FR-91, authenticated owner only)."""
+    _, _, data = _load_authorized_record(doc_id, current_user)
     analysis = AnalysisResult(**data)
-    
+
     try:
         ics_text = generate_ics_calendar(
             doc_id=analysis.doc_id,
@@ -258,13 +378,13 @@ def search_statute_index(q: str = Query(..., min_length=2)):
 
 
 @app.patch("/api/documents/{doc_id}/type", response_model=AnalysisResult)
-def update_document_type(doc_id: str, req: DocTypeUpdateRequest):
+def update_document_type(
+    doc_id: str,
+    req: DocTypeUpdateRequest,
+    current_user: AuthUser = Depends(require_authenticated_user)
+):
     """Allows user to correct the detected document type and refreshes procedural steps (FR-11)."""
-    clean_id = validate_doc_id(doc_id)
-    record_path = config.RECORDS_DIR / f"{clean_id}.json"
-    
-    if not record_path.exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document record not found.")
+    _, record_path, data = _load_authorized_record(doc_id, current_user)
 
     valid_types = [
         "cheque_dishonour_notice", "court_summons", "eviction_notice",
@@ -275,9 +395,6 @@ def update_document_type(doc_id: str, req: DocTypeUpdateRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid doc_type '{req.doc_type}'. Must be one of {valid_types}."
         )
-
-    with open(record_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
 
     data["doc_type"] = req.doc_type
     data["type_confidence"] = 1.0  # User manually confirmed
@@ -311,10 +428,14 @@ def list_sample_documents():
 
 
 @app.post("/api/samples/{sample_id}/load", response_model=AnalysisResult)
-def load_sample_document(sample_id: str):
+def load_sample_document(
+    sample_id: str,
+    current_user: AuthUser = Depends(require_authenticated_user)
+):
     """
     Synthesizes a PDF from a curated sample legal notice and executes
     the complete deterministic analysis pipeline, returning the AnalysisResult.
+    Requires authenticated session.
     """
     gold_path = config.BASE_DIR / "eval" / "gold_samples.json"
     if not gold_path.exists():
@@ -349,6 +470,7 @@ def load_sample_document(sample_id: str):
         blocks=blocks,
         warnings=warnings
     )
+    analysis_result.owner_uid_hash = current_user.uid_hash
 
     record_path = config.RECORDS_DIR / f"{doc_id}.json"
     with open(record_path, "w", encoding="utf-8") as f:
@@ -358,23 +480,25 @@ def load_sample_document(sample_id: str):
 
 
 @app.delete("/api/documents/{doc_id}")
-def delete_document(doc_id: str):
-    """Permanently deletes original upload and analysis records (FR-100)."""
-    clean_id = validate_doc_id(doc_id)
-    record_path = config.RECORDS_DIR / f"{clean_id}.json"
+def delete_document(
+    doc_id: str,
+    current_user: AuthUser = Depends(require_authenticated_user)
+):
+    """Permanently deletes original upload and analysis records (FR-100, authenticated owner only)."""
+    clean_id, record_path, _ = _load_authorized_record(doc_id, current_user)
     matched_files = list(config.UPLOADS_DIR.glob(f"{clean_id}.*"))
-    
+
     deleted = False
     if record_path.exists():
         record_path.unlink()
         deleted = True
-        
+
     for f in matched_files:
         if f.exists():
             f.unlink()
             deleted = True
-            
+
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found or already deleted.")
-        
+
     return {"status": "success", "deleted": True, "doc_id": clean_id}

@@ -105,6 +105,7 @@ class AnalysisResult(BaseModel):
 
     doc_id: str
     filename: str
+    owner_uid_hash: Optional[str] = None
     doc_type: str
     type_confidence: float = Field(ge=0.0, le=1.0)
     pages: List[Page] = Field(default_factory=list)
@@ -148,3 +149,36 @@ class LLMQAOutput(BaseModel):
     answer: str
     document_refs: List[str] = Field(default_factory=list)
     law_refs: List[str] = Field(default_factory=list)
+
+
+class FirebasePublicConfig(BaseModel):
+    configured: bool = False
+    apiKey: str = ""
+    authDomain: str = ""
+    projectId: str = ""
+    storageBucket: str = ""
+    messagingSenderId: str = ""
+    appId: str = ""
+
+
+class FirebaseSessionRequest(BaseModel):
+    id_token: str = Field(..., min_length=20)
+    consent_accepted: bool = False
+    consent_version: str = "v1.0-2026"
+
+
+class AuthUser(BaseModel):
+    uid_hash: str
+    display_name: Optional[str] = None
+    email_masked: Optional[str] = None
+    photo_url: Optional[str] = None
+    provider: str = "firebase"
+    consent_version: Optional[str] = None
+    expires_at: Optional[int] = None
+
+
+class AuthStatusResponse(BaseModel):
+    authenticated: bool
+    firebase_configured: bool
+    user: Optional[AuthUser] = None
+    disclaimer: str = Field(default=config.DISCLAIMER)  # INV-07

@@ -19,11 +19,13 @@ except ImportError:
 DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR / "data_store"))
 UPLOADS_DIR = DATA_DIR / "uploads"
 RECORDS_DIR = DATA_DIR / "records"
+SESSIONS_DIR = DATA_DIR / "sessions"
 RESULTS_DIR = RECORDS_DIR
 
 # Ensure storage directories exist
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 RECORDS_DIR.mkdir(parents=True, exist_ok=True)
+SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Application Versions
 PROMPT_VERSION = "1.0.0"
@@ -44,6 +46,19 @@ TESSERACT_PATH = os.environ.get("TESSERACT_PATH", "")
 RETRIEVAL_MIN_TERMS = int(os.environ.get("RETRIEVAL_MIN_TERMS", "2"))
 DATA_MODE = os.environ.get("DATA_MODE", "demo").lower()
 RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", "1"))
+
+# Google Firebase Authentication Config
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "").strip()
+FIREBASE_AUTH_DOMAIN = os.environ.get("FIREBASE_AUTH_DOMAIN", "").strip()
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "").strip()
+FIREBASE_STORAGE_BUCKET = os.environ.get("FIREBASE_STORAGE_BUCKET", "").strip()
+FIREBASE_MESSAGING_SENDER_ID = os.environ.get("FIREBASE_MESSAGING_SENDER_ID", "").strip()
+FIREBASE_APP_ID = os.environ.get("FIREBASE_APP_ID", "").strip()
+
+# Session Signing & Expiration
+SESSION_COOKIE_NAME = "nyaya_session"
+SESSION_TTL_SECONDS = int(os.environ.get("SESSION_TTL_SECONDS", "86400"))
+SESSION_SECRET_KEY = os.environ.get("SESSION_SECRET_KEY", "").strip()
 
 # Mandatory Statutory Disclaimer (INV-07)
 # Must not be changed without legal counsel review

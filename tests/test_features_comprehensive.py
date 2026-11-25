@@ -14,12 +14,15 @@ import pymupdf as fitz
 from fastapi import UploadFile, HTTPException
 
 from app import config, nlp
-from app.models import DocTypeUpdateRequest
+from app.models import DocTypeUpdateRequest, AuthUser
 from app.main import (
     upload_and_analyze_document,
     get_document_analysis,
     update_document_type
 )
+
+
+_TEST_USER = AuthUser(uid_hash="features_test_user_hash_001", provider="google")
 
 
 def create_notice_with_glossary_and_past_deadline() -> bytes:
@@ -48,7 +51,7 @@ def test_fr_11_user_document_type_override():
         filename="civil_summons.pdf",
         file=io.BytesIO(pdf_bytes)
     )
-    result = upload_and_analyze_document(file=upload)
+    result = upload_and_analyze_document(file=upload, current_user=_TEST_USER)
     doc_id = result.doc_id
 
     # Initial type should be court_summons
@@ -57,7 +60,7 @@ def test_fr_11_user_document_type_override():
 
     # User corrects type to eviction_notice
     update_req = DocTypeUpdateRequest(doc_type="eviction_notice")
-    updated = update_document_type(doc_id=doc_id, req=update_req)
+    updated = update_document_type(doc_id=doc_id, req=update_req, current_user=_TEST_USER)
 
     assert updated.doc_type == "eviction_notice"
     assert updated.type_confidence == 1.0
@@ -66,7 +69,7 @@ def test_fr_11_user_document_type_override():
 
     # Verify invalid document type is rejected with HTTP 400
     with pytest.raises(HTTPException) as exc:
-        update_document_type(doc_id=doc_id, req=DocTypeUpdateRequest(doc_type="fraudulent_fake_type"))
+        update_document_type(doc_id=doc_id, req=DocTypeUpdateRequest(doc_type="fraudulent_fake_type"), current_user=_TEST_USER)
     assert exc.value.status_code == 400
 
 
@@ -77,7 +80,7 @@ def test_fr_25_timeline_sorted_and_expired_deadline_warned():
         filename="civil_summons_past.pdf",
         file=io.BytesIO(pdf_bytes)
     )
-    result = upload_and_analyze_document(file=upload)
+    result = upload_and_analyze_document(file=upload, current_user=_TEST_USER)
 
     # 1. Timeline must be sorted chronologically
     dated_items = [d.date_iso for d in result.dates if d.date_iso]
@@ -94,7 +97,7 @@ def test_fr_50_legal_glossary_detected():
         filename="civil_summons_terms.pdf",
         file=io.BytesIO(pdf_bytes)
     )
-    result = upload_and_analyze_document(file=upload)
+    result = upload_and_analyze_document(file=upload, current_user=_TEST_USER)
 
     terms = [g.term.lower() for g in result.glossary]
     assert "vakalatnama" in terms

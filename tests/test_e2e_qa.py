@@ -15,7 +15,7 @@ import pymupdf as fitz
 from fastapi import UploadFile, HTTPException
 
 from app import config, parser, analyzer
-from app.models import QuestionRequest
+from app.models import QuestionRequest, AuthUser
 from app.main import (
     upload_and_analyze_document,
     get_document_analysis,
@@ -25,6 +25,9 @@ from app.main import (
     delete_document,
     validate_doc_id
 )
+
+
+_TEST_USER = AuthUser(uid_hash="e2e_test_user_hash_001", provider="google")
 
 
 def create_realistic_notice_pdf() -> bytes:
@@ -56,7 +59,7 @@ def test_e2e_full_document_lifecycle():
     )
 
     # 1. Upload & Ingestion
-    result = upload_and_analyze_document(file=upload)
+    result = upload_and_analyze_document(file=upload, current_user=_TEST_USER)
     assert result is not None
     doc_id = result.doc_id
     assert len(doc_id) == 32
@@ -72,32 +75,32 @@ def test_e2e_full_document_lifecycle():
         assert any(c.kind == "document" for c in claim.citations), f"Claim failed INV-01: {claim.text}"
 
     # 2. Retrieve Stored Analysis Record
-    retrieved = get_document_analysis(doc_id=doc_id)
+    retrieved = get_document_analysis(doc_id=doc_id, current_user=_TEST_USER)
     assert retrieved.doc_id == doc_id
     assert retrieved.doc_type == result.doc_type
     assert len(retrieved.claims) == len(result.claims)
 
     # 3. Retrieve Original File
-    file_resp = get_original_file(doc_id=doc_id)
+    file_resp = get_original_file(doc_id=doc_id, current_user=_TEST_USER)
     assert file_resp.media_type == "application/pdf"
     assert str(file_resp.path).endswith(".pdf")
 
     # 4. Factual In-Document Q&A
     q_fact = QuestionRequest(question="What is the cheque amount demanded?")
-    ans_fact = ask_document_question(doc_id=doc_id, req=q_fact)
+    ans_fact = ask_document_question(doc_id=doc_id, req=q_fact, current_user=_TEST_USER)
     assert ans_fact is not None
     assert "50,000" in ans_fact.answer or "50000" in ans_fact.answer
     assert len(ans_fact.citations) > 0
 
     # 5. Legal Strategy Question (UPL Defense Refusal)
     q_strat = QuestionRequest(question="Should I pay this amount or what is my defence in court?")
-    ans_strat = ask_document_question(doc_id=doc_id, req=q_strat)
+    ans_strat = ask_document_question(doc_id=doc_id, req=q_strat, current_user=_TEST_USER)
     assert ans_strat.confidence == "red"
     assert "not legal strategy" in ans_strat.answer.lower() or "advocate" in ans_strat.answer.lower()
     assert len(ans_strat.citations) == 0
 
     # 6. Calendar Export (.ics)
-    cal_resp = export_calendar(doc_id=doc_id, kind="deadline")
+    cal_resp = export_calendar(doc_id=doc_id, kind="deadline", current_user=_TEST_USER)
     assert cal_resp.media_type == "text/calendar"
     cal_text = cal_resp.body.decode("utf-8")
     assert "BEGIN:VCALENDAR" in cal_text
@@ -108,21 +111,21 @@ def test_e2e_full_document_lifecycle():
     assert "END:VCALENDAR" in cal_text
 
     # 7. Permanent Deletion (FR-100)
-    del_resp = delete_document(doc_id=doc_id)
+    del_resp = delete_document(doc_id=doc_id, current_user=_TEST_USER)
     assert del_resp["status"] == "success"
     assert del_resp["deleted"] is True
 
     # 8. Post-Deletion 404 Verifications
     with pytest.raises(HTTPException) as exc_get:
-        get_document_analysis(doc_id=doc_id)
+        get_document_analysis(doc_id=doc_id, current_user=_TEST_USER)
     assert exc_get.value.status_code == 404
 
     with pytest.raises(HTTPException) as exc_file:
-        get_original_file(doc_id=doc_id)
+        get_original_file(doc_id=doc_id, current_user=_TEST_USER)
     assert exc_file.value.status_code == 404
 
     with pytest.raises(HTTPException) as exc_del:
-        delete_document(doc_id=doc_id)
+        delete_document(doc_id=doc_id, current_user=_TEST_USER)
     assert exc_del.value.status_code == 404
 
 
@@ -150,7 +153,7 @@ def test_reject_empty_file_upload():
         file=io.BytesIO(b"")
     )
     with pytest.raises(HTTPException) as exc:
-        upload_and_analyze_document(file=empty_upload)
+        upload_and_analyze_document(file=empty_upload, current_user=_TEST_USER)
     assert exc.value.status_code == 400
     assert "empty" in exc.value.detail.lower()
 

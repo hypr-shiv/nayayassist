@@ -1053,6 +1053,9 @@
     <div class="header-actions">
       <button class="btn btn-subtle" id="backToHomeBtn" style="display:none;" onclick="showLandingView()" title="Return to Overview">← Overview</button>
       <button class="btn btn-subtle" id="themeToggleBtn" title="Toggle Light/Dark Editorial Theme">🌙</button>
+      <div id="authNavGroup" style="display:inline-flex; align-items:center; gap:0.5rem;">
+        <a href="/login" class="btn" id="loginNavBtn">Sign In</a>
+      </div>
       <button class="btn btn-primary" id="openUploadBtn" onclick="triggerUpload()">Upload Notice</button>
       <button class="btn" id="icsExportBtn" style="display:none;" title="Download deadlines to Apple/Google calendar">📅 Export .ICS</button>
       <button class="btn" id="deleteDocBtn" style="display:none; color: #DC2626;" title="Permanently delete this document and analysis">🗑️ Delete</button>
@@ -1094,8 +1097,8 @@
           </div>
 
           <div style="display: flex; gap: 1rem; align-items: center;">
-            <button class="btn btn-primary" style="padding: 10px 20px; font-size: 0.95rem;" onclick="triggerUpload()">
-              📄 Analyze Your Notice Now
+            <button class="btn btn-primary" id="heroAnalyzeBtn" style="padding: 10px 20px; font-size: 0.95rem;" onclick="triggerUpload()">
+              🔒 Sign In to Analyze Notice
             </button>
             <a href="#samples" class="btn" style="padding: 10px 18px; font-size: 0.95rem;">
               Try Sample Notice ▾
@@ -1105,7 +1108,19 @@
 
         <!-- Ingestion Dual Card -->
         <div class="ingest-card">
-          <div class="dropzone-box" id="dropzone" onclick="triggerUpload()">
+          <!-- Auth Required Gate (Shown before sign-in) -->
+          <div id="authGateBanner" style="border: 1px solid var(--border-strong); border-radius: 8px; padding: 1.75rem 1.25rem; text-align: center; background: var(--bg-surface-subtle); display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+            <span class="brand-scale-badge" style="background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue-border);">STEP 1 • GOOGLE FIREBASE SIGN-IN REQUIRED</span>
+            <div style="font-weight: 700; font-size: 1.05rem;">Sign in to unlock the Workbench</div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); max-width: 340px;">
+              Authenticate via Google Firebase to upload legal notices, run OCR &amp; deadline analysis, or inspect curated samples.
+            </div>
+            <a href="/login" class="btn btn-primary" style="margin-top: 0.25rem; width: 100%; justify-content: center;">
+              Sign In with Google to Start →
+            </a>
+          </div>
+
+          <div class="dropzone-box" id="dropzone" onclick="triggerUpload()" style="display:none;">
             <span class="dropzone-icon">📥</span>
             <div class="dropzone-title">Upload Legal Document</div>
             <div class="dropzone-sub">Drag & drop or click to browse<br>PDF, PNG, JPG up to 15 MB</div>
@@ -1484,6 +1499,7 @@
     let currentPdf = null;
     let currentPage = 1;
     let pageViewports = {};
+    let isAuthenticated = false;
 
     // DOM References
     const landingView = document.getElementById("landingView");
@@ -1506,12 +1522,59 @@
     const claimCountBadge = document.getElementById("claimCountBadge");
     const stepsList = document.getElementById("stepsList");
 
-    // Theme Toggle
+    // Theme Toggle with LocalStorage Persistence
+    const savedTheme = localStorage.getItem("nyaya_theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
     document.getElementById("themeToggleBtn").addEventListener("click", () => {
       const html = document.documentElement;
       const isDark = html.getAttribute("data-theme") === "dark";
-      html.setAttribute("data-theme", isDark ? "light" : "dark");
+      const next = isDark ? "light" : "dark";
+      html.setAttribute("data-theme", next);
+      localStorage.setItem("nyaya_theme", next);
     });
+
+    // Firebase Auth Session Status Loader & Workflow Gate
+    async function refreshAuthStatus() {
+      const authNavGroup = document.getElementById("authNavGroup");
+      const authGateBanner = document.getElementById("authGateBanner");
+      const heroAnalyzeBtn = document.getElementById("heroAnalyzeBtn");
+
+      try {
+        const resp = await fetch("/api/auth/me");
+        if (!resp.ok) return;
+        const data = await resp.json();
+        isAuthenticated = Boolean(data.authenticated && data.user);
+
+        if (isAuthenticated) {
+          const label = escapeHtml(data.user.display_name || data.user.email_masked || "Signed In");
+          if (authNavGroup) {
+            authNavGroup.innerHTML = `
+              <span class="brand-scale-badge" title="Authenticated via ${escapeHtml(data.user.provider)}">👤 ${label}</span>
+              <a href="/logout" class="btn btn-subtle" title="Sign out of NyayaAssist & Firebase">Sign Out</a>
+            `;
+          }
+          if (authGateBanner) authGateBanner.style.display = "none";
+          if (dropzone) dropzone.style.display = "block";
+          if (openUploadBtn) openUploadBtn.textContent = "Upload Notice";
+          if (heroAnalyzeBtn) heroAnalyzeBtn.textContent = "📄 Analyze Your Notice Now";
+
+          // Auto-load sample if returned right after login
+          const params = new URLSearchParams(window.location.search);
+          const pendingSample = params.get("sample");
+          if (pendingSample && /^[a-zA-Z0-9_-]+$/.test(pendingSample)) {
+            window.history.replaceState({}, document.title, "/");
+            loadSampleNotice(pendingSample);
+          }
+        } else {
+          if (authNavGroup) authNavGroup.innerHTML = `<a href="/login" class="btn" id="loginNavBtn">Sign In</a>`;
+          if (authGateBanner) authGateBanner.style.display = "flex";
+          if (dropzone) dropzone.style.display = "none";
+          if (openUploadBtn) openUploadBtn.textContent = "Sign In to Upload";
+          if (heroAnalyzeBtn) heroAnalyzeBtn.textContent = "🔒 Sign In to Analyze Notice";
+        }
+      } catch (_) {}
+    }
+    refreshAuthStatus();
 
     // View Switching
     function showLandingView() {
@@ -1543,8 +1606,12 @@
       setTimeout(() => { statusToast.style.display = "none"; }, 4000);
     }
 
-    // Upload Trigger
+    // Upload Trigger (Auth-Gated)
     function triggerUpload() {
+      if (!isAuthenticated) {
+        window.location.href = "/login?expired=1";
+        return;
+      }
       fileInput.click();
     }
 
@@ -1563,17 +1630,29 @@
     dropzone.addEventListener("drop", (e) => {
       e.preventDefault();
       dropzone.classList.remove("dragover");
+      if (!isAuthenticated) {
+        window.location.href = "/login?expired=1";
+        return;
+      }
       if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
     });
 
     // File Upload Function
     async function uploadFile(file) {
+      if (!isAuthenticated) {
+        window.location.href = "/login?expired=1";
+        return;
+      }
       uploadStatus.innerHTML = `<span style="color:var(--blue-text);">Uploading and analyzing with deterministic pipeline...</span>`;
       const formData = new FormData();
       formData.append("file", file);
 
       try {
         const resp = await fetch("/api/documents", { method: "POST", body: formData });
+        if (resp.status === 401) {
+          window.location.href = "/login?expired=1";
+          return;
+        }
         if (!resp.ok) {
           const err = await resp.json();
           throw new Error(err.detail || "Upload failed");
@@ -1587,11 +1666,19 @@
       }
     }
 
-    // 1-Click Sample Notice Loader
+    // 1-Click Sample Notice Loader (Auth-Gated)
     async function loadSampleNotice(sampleId) {
+      if (!isAuthenticated) {
+        window.location.href = `/login?sample=${encodeURIComponent(sampleId)}`;
+        return;
+      }
       showToast("Loading sample notice and running deterministic pipeline...");
       try {
         const resp = await fetch(`/api/samples/${sampleId}/load`, { method: "POST" });
+        if (resp.status === 401) {
+          window.location.href = `/login?sample=${encodeURIComponent(sampleId)}`;
+          return;
+        }
         if (!resp.ok) {
           const err = await resp.json();
           throw new Error(err.detail || "Failed to load sample notice");
